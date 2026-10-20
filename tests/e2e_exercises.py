@@ -103,7 +103,7 @@ try:
     r = b.eval("import('./src/db/exercises.js').then(m=>m.deleteExercise('custom-used'))")
     check(r == 'soft', 'vlastný cvik s históriou zmazaný mäkko')
 
-    b.goto(BASE + '#/more', 1); b.wait_for("document.querySelector('.large-header')")
+    b.goto(BASE + '#/more', 1); b.wait_for("document.querySelector('.app-header.large')")
     b.screenshot(f'{T}/s4_more.png')
     click_text('a.row', 'Zmazané cviky'); settle(0.8)
     t = rows_text()
@@ -121,7 +121,7 @@ try:
     check(b.eval("import('./src/db/exercises.js').then(m=>m.getExercise('lib-back-squat')).then(e=>e.name)") == 'Drep môj', 'sync knižnice neprepisuje úpravy')
 
     # Navigácia späť cez tab
-    b.goto(BASE + '#/plans', 1); b.wait_for("document.querySelector('.large-header')")
+    b.goto(BASE + '#/plans', 1); b.wait_for("document.querySelector('.app-header.large')")
     b.screenshot(f'{T}/s6_plans.png')
     errs = [c for c in b.console if c.startswith('EXC')]
     check(not errs, f'žiadne JS výnimky {errs}')

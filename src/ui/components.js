@@ -1,5 +1,9 @@
 import { html, useState, useEffect } from '../lib.js';
 import { goBack, navigate, navigateRoot } from '../router.js';
+import { Icon, EquipmentIcon } from './icons.js';
+import { MUSCLE_GROUPS, EQUIPMENT } from '../data/taxonomy.js';
+
+export { Icon, EquipmentIcon };
 
 // ── Dáta ─────────────────────────────────────────────────
 
@@ -37,108 +41,237 @@ export function Toast() {
   return msg ? html`<div class="toast" role="status">${msg}</div>` : null;
 }
 
-// ── Ikony ────────────────────────────────────────────────
+// ── Tlačidlá ─────────────────────────────────────────────
 
-const svg = (body, size = 24) => html`<svg width=${size} height=${size} viewBox="0 0 24 24" fill="none"
-  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
-
-export const Icon = {
-  plans: () => svg(html`<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3v2h6V3M9 10h6M9 14h6M9 18h3"/>`),
-  dumbbell: () => svg(html`<path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/>`),
-  more: () => svg(html`<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>`),
-  chevronLeft: () => svg(html`<path d="M15 18l-6-6 6-6"/>`, 22),
-  chevronRight: () => svg(html`<path d="M9 18l6-6-6-6"/>`, 18),
-  plus: () => svg(html`<path d="M12 5v14M5 12h14"/>`, 22),
-  search: () => svg(html`<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>`, 18),
-  check: () => svg(html`<path d="M5 12l5 5 9-10"/>`, 16),
-  up: () => svg(html`<path d="M6 15l6-6 6 6"/>`, 18),
-  down: () => svg(html`<path d="M6 9l6 6 6-6"/>`, 18),
-  trash: () => svg(html`<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>`, 18),
-  x: () => svg(html`<path d="M6 6l12 12M18 6L6 18"/>`, 16),
-};
-
-// ── Navigácia ────────────────────────────────────────────
-
-/** Horná lišta podstránky. */
-export function NavBar({ title, back, backLabel = 'Späť', left, right }) {
+export function PrimaryButton({ children, icon, onClick, disabled, type = 'button', block }) {
   return html`
-    <header class="nav">
-      <div class="nav-side">
-        ${left || (back && html`
-          <button class="nav-btn nav-back" onClick=${() => goBack(back)}>
-            <${Icon.chevronLeft} /><span>${backLabel}</span>
-          </button>`)}
-      </div>
-      <div class="nav-title">${title}</div>
-      <div class="nav-side nav-right">${right}</div>
-    </header>`;
+    <button type=${type} class=${`btn btn-primary ${block ? 'btn-block' : ''}`} onClick=${onClick} disabled=${disabled}>
+      ${icon}<span>${children}</span>
+    </button>`;
 }
 
-/** Hlavička koreňovej obrazovky (veľký nadpis). */
-export function LargeHeader({ title, right }) {
+export function SecondaryButton({ children, icon, onClick, disabled, type = 'button', block }) {
   return html`
-    <header class="large-header">
-      <h1>${title}</h1>
-      ${right && html`<div class="large-header-actions">${right}</div>`}
+    <button type=${type} class=${`btn btn-secondary ${block ? 'btn-block' : ''}`} onClick=${onClick} disabled=${disabled}>
+      ${icon}<span>${children}</span>
+    </button>`;
+}
+
+/** Okrúhle tlačidlo s ikonou (hlavička, filter). */
+export function IconButton({ icon, label, onClick, disabled, badge, class: cls = '' }) {
+  return html`
+    <button type="button" class=${`icon-btn ${cls}`} aria-label=${label} title=${label} onClick=${onClick} disabled=${disabled}>
+      ${icon}${badge && html`<span class="icon-btn-badge" />`}
+    </button>`;
+}
+
+export function TextButton({ children, onClick, disabled, strong, danger }) {
+  return html`
+    <button type="button" class=${`text-btn ${strong ? 'strong' : ''} ${danger ? 'danger' : ''}`}
+      onClick=${onClick} disabled=${disabled}>${children}</button>`;
+}
+
+// ── Hlavička a navigácia ─────────────────────────────────
+
+/**
+ * large: koreňová obrazovka s veľkým nadpisom (H1) a akciami vpravo.
+ * inak: lišta podstránky so „späť" vľavo, voliteľným titulkom a akciami vpravo.
+ */
+export function AppHeader({ title, large, back, backLabel = 'Späť', left, right }) {
+  if (large) {
+    return html`
+      <header class="app-header large">
+        <h1>${title}</h1>
+        ${right && html`<div class="app-header-actions">${right}</div>`}
+      </header>`;
+  }
+  return html`
+    <header class="app-header bar">
+      <div class="bar-side">
+        ${left || (back && html`
+          <button type="button" class="bar-back" onClick=${() => goBack(back)}>
+            ${Icon.chevronLeft()}<span>${backLabel}</span>
+          </button>`)}
+      </div>
+      <div class="bar-title">${title}</div>
+      <div class="bar-side bar-right">${right}</div>
     </header>`;
 }
 
 const TABS = [
-  { path: '/plans', label: 'Plány', icon: Icon.plans },
+  { path: '/plans', label: 'Plány', icon: Icon.home },
   { path: '/exercises', label: 'Cviky', icon: Icon.dumbbell },
   { path: '/more', label: 'Viac', icon: Icon.more },
 ];
 
-export function TabBar({ path }) {
+export function BottomTabBar({ path }) {
   return html`
-    <nav class="tabbar">
+    <nav class="tabbar" aria-label="Hlavná navigácia">
       ${TABS.map((t) => {
         const active = path === t.path || path.startsWith(`${t.path}/`);
         return html`
-          <a class=${`tab ${active ? 'active' : ''}`} href=${`#${t.path}`}
+          <a class=${`tab ${active ? 'active' : ''}`} href=${`#${t.path}`} aria-current=${active ? 'page' : undefined}
              onClick=${(e) => { e.preventDefault(); if (path !== t.path) navigateRoot(t.path); }}>
-            <${t.icon} /><span>${t.label}</span>
+            ${t.icon(24)}<span>${t.label}</span>
           </a>`;
       })}
     </nav>`;
 }
 
-// ── Zoznamy ──────────────────────────────────────────────
+// ── Vstupy a filtre ──────────────────────────────────────
 
-export function Section({ title, footer, children, class: cls = '' }) {
+export function SearchField({ value, onInput, placeholder = 'Hľadať…' }) {
   return html`
-    <section class=${`section ${cls}`}>
-      ${title && html`<h2 class="section-title">${title}</h2>`}
-      <div class="group">${children}</div>
-      ${footer && html`<p class="section-footer">${footer}</p>`}
-    </section>`;
+    <label class="search">
+      ${Icon.search()}
+      <input type="search" placeholder=${placeholder} value=${value} autocomplete="off"
+        aria-label=${placeholder} onInput=${(e) => onInput(e.currentTarget.value)} />
+      ${value && html`
+        <button type="button" class="search-clear" aria-label="Vymazať" onClick=${() => onInput('')}>${Icon.x(12)}</button>`}
+    </label>`;
 }
 
-export function Row({ title, subtitle, value, onClick, href, chevron, danger, disabled, children }) {
-  const content = html`
-    <div class="row-main">
-      <div class=${`row-title ${danger ? 'danger' : ''}`}>${title}</div>
-      ${subtitle && html`<div class="row-subtitle">${subtitle}</div>`}
-      ${children}
-    </div>
-    ${value !== undefined && html`<div class="row-value">${value}</div>`}
-    ${chevron && html`<span class="row-chevron"><${Icon.chevronRight} /></span>`}`;
-  if (href) {
-    return html`<a class="row" href=${href} onClick=${(e) => { e.preventDefault(); navigate(href.replace(/^#/, '')); }}>${content}</a>`;
-  }
-  if (onClick) {
-    return html`<button class="row" onClick=${onClick} disabled=${disabled}>${content}</button>`;
-  }
-  return html`<div class=${`row ${disabled ? 'disabled' : ''}`}>${content}</div>`;
-}
-
-export function Chip({ active, onClick, children }) {
+export function FilterChip({ active, onClick, children }) {
   return html`<button type="button" class=${`chip ${active ? 'active' : ''}`} aria-pressed=${!!active} onClick=${onClick}>${children}</button>`;
 }
 
 export function Tag({ children, kind = '' }) {
   return html`<span class=${`tag ${kind}`}>${children}</span>`;
 }
+
+// ── Karty a zoznamy ──────────────────────────────────────
+
+/** Skupina s popisom nad kartou (nastavenia, zoznamy). */
+export function Section({ title, footer, children, class: cls = '' }) {
+  return html`
+    <section class=${`section ${cls}`}>
+      ${title && html`<h2 class="section-caption">${title}</h2>`}
+      <div class="card group">${children}</div>
+      ${footer && html`<p class="section-footer">${footer}</p>`}
+    </section>`;
+}
+
+/** Karta s nadpisom a ikonou vo vnútri; voliteľne zbaliteľná. */
+export function SectionCard({ title, icon, headerRight, collapsed, onToggle, children, footer }) {
+  const head = html`${icon && html`<span class="section-card-icon">${icon}</span>`}
+    <h2 class="section-card-title">${title}</h2>`;
+  return html`
+    <section class="section">
+      <div class="card section-card">
+        <div class="section-card-head">
+          ${onToggle
+            ? html`<button type="button" class="section-card-toggle" aria-expanded=${!collapsed} onClick=${onToggle}>
+                ${head}<span class=${`section-card-chevron ${collapsed ? '' : 'open'}`}>${Icon.chevronDown()}</span>
+              </button>`
+            : head}
+          ${headerRight && html`<div class="section-card-right">${headerRight}</div>`}
+        </div>
+        ${!collapsed && html`<div class="section-card-body">${children}</div>`}
+      </div>
+      ${footer && html`<p class="section-footer">${footer}</p>`}
+    </section>`;
+}
+
+/** Riadok nastavení: ikona, názov, hodnota, šípka. Klikateľný cez href alebo onClick. */
+export function SettingsRow({ icon, title, subtitle, value, href, onClick, chevron, danger, disabled, children }) {
+  const content = html`
+    ${icon && html`<span class="settings-icon">${icon}</span>`}
+    <div class="row-main">
+      <div class=${`row-title ${danger ? 'danger' : ''}`}>${title}</div>
+      ${subtitle && html`<div class="row-subtitle">${subtitle}</div>`}
+      ${children}
+    </div>
+    ${value !== undefined && value !== null && html`<div class="row-value">${value}</div>`}
+    ${chevron && html`<span class="row-chevron">${Icon.chevronRight()}</span>`}`;
+  if (href && !disabled) {
+    return html`<a class="row" href=${href} onClick=${(e) => { e.preventDefault(); navigate(href.replace(/^#/, '')); }}>${content}</a>`;
+  }
+  if (onClick && !disabled) {
+    return html`<button type="button" class="row" onClick=${onClick}>${content}</button>`;
+  }
+  return html`<div class=${`row ${disabled ? 'disabled' : ''}`} aria-disabled=${disabled ? 'true' : undefined}>${content}</div>`;
+}
+
+export function StatCard({ value, label, text }) {
+  return html`
+    <div class="stat">
+      <div class=${`stat-value ${text ? 'text' : ''}`}>${value}</div>
+      <div class="stat-label">${label}</div>
+    </div>`;
+}
+
+// ── Cviky ────────────────────────────────────────────────
+
+/**
+ * Obrázok cviku. Kým cviky nemajú vlastné obrázky, zobrazí jednotný placeholder
+ * s ikonou vybavenia. Prop `src` je pripravený na budúce obrázky.
+ */
+export function ExerciseImage({ exercise, size = 'thumb', src }) {
+  const iconFn = EquipmentIcon[exercise?.equipment] || EquipmentIcon.other;
+  return html`
+    <div class=${`ex-image ${size}`} aria-hidden="true">
+      ${src ? html`<img src=${src} alt="" loading="lazy" />` : iconFn(size === 'hero' ? 56 : 28)}
+    </div>`;
+}
+
+export function exerciseMeta(ex) {
+  return [...ex.muscleGroups.map((m) => MUSCLE_GROUPS[m] || m), EQUIPMENT[ex.equipment] || ex.equipment].join(' · ');
+}
+
+export function ExerciseListItem({ exercise, href, right }) {
+  const body = html`
+    <${ExerciseImage} exercise=${exercise} />
+    <div class="ex-item-main">
+      <div class="ex-item-name">${exercise.name}</div>
+      <div class="ex-item-meta">${exerciseMeta(exercise)}</div>
+    </div>
+    ${right || (href && html`<span class="row-chevron">${Icon.chevronRight()}</span>`)}`;
+  if (href) {
+    return html`<a class="card ex-item" href=${href}
+      onClick=${(e) => { e.preventDefault(); navigate(href.replace(/^#/, '')); }}>${body}</a>`;
+  }
+  return html`<div class="card ex-item">${body}</div>`;
+}
+
+// ── Panely ───────────────────────────────────────────────
+
+/** Spodný panel (filter, menu). Zatvorí sa ťuknutím mimo alebo Escape. */
+export function BottomSheet({ open, title, onClose, children, footer }) {
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (e) => e.key === 'Escape' && onClose();
+    addEventListener('keydown', onKey);
+    return () => removeEventListener('keydown', onKey);
+  }, [open]);
+  if (!open) return null;
+  return html`
+    <div class="sheet-backdrop" onClick=${onClose}>
+      <div class="sheet" role="dialog" aria-modal="true" aria-label=${title} onClick=${(e) => e.stopPropagation()}>
+        <div class="sheet-grabber" />
+        ${title && html`<h2 class="sheet-title">${title}</h2>`}
+        <div class="sheet-body">${children}</div>
+        ${footer && html`<div class="sheet-footer">${footer}</div>`}
+      </div>
+    </div>`;
+}
+
+/** Menu akcií v štýle iOS action sheet. actions: [{label, icon, danger, onClick}] */
+export function ActionSheet({ open, title, actions, onClose }) {
+  return html`
+    <${BottomSheet} open=${open} title=${title} onClose=${onClose}
+      footer=${html`<${SecondaryButton} block onClick=${onClose}>Zrušiť</${SecondaryButton}>`}>
+      <div class="card group">
+        ${actions.map((a) => html`
+          <button type="button" class=${`row action-row ${a.danger ? 'danger' : ''}`}
+            onClick=${() => { onClose(); a.onClick(); }}>
+            ${a.icon && html`<span class="settings-icon">${a.icon}</span>`}
+            <span class="row-title">${a.label}</span>
+          </button>`)}
+      </div>
+    </${BottomSheet}>`;
+}
+
+// ── Stavy ────────────────────────────────────────────────
 
 export function EmptyState({ title, text, action }) {
   return html`
@@ -156,3 +289,10 @@ export function Loading() {
 export function ErrorBox({ error }) {
   return html`<div class="error-box">Chyba: ${String(error?.message || error)}</div>`;
 }
+
+// ── Dočasné aliasy pre obrazovky, ktoré ešte nie sú prerobené (odstrániť v R6) ──
+export const LargeHeader = (p) => AppHeader({ ...p, large: true });
+export const NavBar = (p) => AppHeader(p);
+export const Row = SettingsRow;
+export const Chip = FilterChip;
+export const TabBar = BottomTabBar;
