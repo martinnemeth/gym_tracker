@@ -23,6 +23,17 @@ export function useAsync(fn, deps = []) {
   return { ...state, reload: () => setTick((t) => t + 1) };
 }
 
+/** Aktuálny čas, obnovovaný v intervale (stopky tréningu). */
+export function useNow(intervalMs = 1000, enabled = true) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    if (!enabled) return undefined;
+    const id = setInterval(() => setNow(Date.now()), intervalMs);
+    return () => clearInterval(id);
+  }, [intervalMs, enabled]);
+  return now;
+}
+
 // ── Toast ────────────────────────────────────────────────
 
 const toastListeners = new Set();
@@ -100,6 +111,7 @@ export function AppHeader({ title, large, back, backLabel = 'Späť', left, righ
 
 const TABS = [
   { path: '/plans', label: 'Plány', icon: Icon.home },
+  { path: '/history', label: 'História', icon: Icon.clock },
   { path: '/exercises', label: 'Cviky', icon: Icon.dumbbell },
   { path: '/more', label: 'Viac', icon: Icon.more },
 ];
@@ -192,6 +204,11 @@ export function SettingsRow({ icon, title, subtitle, value, href, onClick, chevr
   return html`<div class=${`row ${disabled ? 'disabled' : ''}`} aria-disabled=${disabled ? 'true' : undefined}>${content}</div>`;
 }
 
+/** Tlačidlo-odkaz v štýle riadku: ikona + text v akcentovej farbe. */
+export function AddRow({ children, onClick }) {
+  return html`<button type="button" class="row add-row" onClick=${onClick}>${Icon.plus()}<span>${children}</span></button>`;
+}
+
 export function StatCard({ value, label, text }) {
   return html`
     <div class="stat">
@@ -218,7 +235,8 @@ export function exerciseMeta(ex) {
   return [...ex.muscleGroups.map((m) => MUSCLE_GROUPS[m] || m), EQUIPMENT[ex.equipment] || ex.equipment].join(' · ');
 }
 
-export function ExerciseListItem({ exercise, href, right }) {
+/** href: odkaz na detail; onClick + selected: výber (napr. v ExercisePicker). */
+export function ExerciseListItem({ exercise, href, right, onClick, selected }) {
   const body = html`
     <${ExerciseImage} exercise=${exercise} />
     <div class="ex-item-main">
@@ -226,6 +244,10 @@ export function ExerciseListItem({ exercise, href, right }) {
       <div class="ex-item-meta">${exerciseMeta(exercise)}</div>
     </div>
     ${right || (href && html`<span class="row-chevron">${Icon.chevronRight()}</span>`)}`;
+  if (onClick) {
+    return html`<button type="button" class=${`card ex-item ${selected ? 'selected' : ''}`}
+      aria-pressed=${!!selected} onClick=${onClick}>${body}</button>`;
+  }
   if (href) {
     return html`<a class="card ex-item" href=${href}
       onClick=${(e) => { e.preventDefault(); navigate(href.replace(/^#/, '')); }}>${body}</a>`;
@@ -235,8 +257,8 @@ export function ExerciseListItem({ exercise, href, right }) {
 
 // ── Panely ───────────────────────────────────────────────
 
-/** Spodný panel (filter, menu). Zatvorí sa ťuknutím mimo alebo Escape. */
-export function BottomSheet({ open, title, onClose, children, footer }) {
+/** Spodný panel (filter, menu). Zatvorí sa ťuknutím mimo alebo Escape. tall: takmer na celú výšku. */
+export function BottomSheet({ open, title, onClose, children, footer, tall }) {
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e) => e.key === 'Escape' && onClose();
@@ -246,7 +268,7 @@ export function BottomSheet({ open, title, onClose, children, footer }) {
   if (!open) return null;
   return html`
     <div class="sheet-backdrop" onClick=${onClose}>
-      <div class="sheet" role="dialog" aria-modal="true" aria-label=${title} onClick=${(e) => e.stopPropagation()}>
+      <div class=${`sheet ${tall ? 'tall' : ''}`} role="dialog" aria-modal="true" aria-label=${title} onClick=${(e) => e.stopPropagation()}>
         <div class="sheet-grabber" />
         ${title && html`<h2 class="sheet-title">${title}</h2>`}
         <div class="sheet-body">${children}</div>

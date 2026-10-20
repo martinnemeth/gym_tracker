@@ -171,9 +171,9 @@ try:
 
     # ── Plány a navigácia ──
     b.goto(BASE + '#/plans', 1); b.wait_for("document.querySelector('.hero')")
-    check(b.eval("document.querySelector('.hero .btn-primary').disabled"), 'CTA Vytvoriť plán je neaktívne (M2)')
+    check(not b.eval("document.querySelector('.hero .btn-primary').disabled"), 'CTA Vytvoriť plán je aktívne')
     b.screenshot(f'{T}/08_plany.png')
-    click('a.feature'); settle(0.6)
+    click_text('a.feature', 'Knižnica'); settle(0.6)
     check(b.eval("location.hash") == '#/exercises', 'dlaždica Knižnica cvikov otvorí Cviky')
     click_text('.tab', 'Viac'); settle(0.6)
     check(b.eval("location.hash") == '#/more' and exists('.tab.active[aria-current=page]'), 'tab bar prepína obrazovky')

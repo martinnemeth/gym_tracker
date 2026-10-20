@@ -554,6 +554,334 @@ a.feature:active { opacity: 0.7; }
 .tip-label { font-size: var(--fs-caption); font-weight: 600; letter-spacing: 0.08em; color: var(--text-2); }
 .tip-text { margin: var(--sp-1) 0 0; font-size: 15px; line-height: 1.45; }
 
+/* ── M2: plány, tréning, časovač, história ──── */
+
+.btn-sm { min-height: 36px; padding: 0 var(--sp-4); font-size: 15px; border-radius: var(--r-pill); }
+.section-footer.center { text-align: center; }
+
+/* Prebiehajúci tréning */
+.resume {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  min-height: 64px;
+  padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-4);
+  text-align: left;
+  border-color: rgba(199, 243, 107, 0.35);
+  background: var(--accent-soft);
+}
+.resume:active { background: var(--card-pressed); }
+.resume-pulse {
+  flex: none;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+.resume-main { flex: 1; min-width: 0; }
+.resume-label { font-size: var(--fs-caption); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.resume-title { font-size: 17px; font-weight: 600; }
+.resume-time { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* Aktívny plán */
+.plan-hero { padding-top: var(--sp-6); }
+.hero-caption { font-size: var(--fs-caption); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-2); }
+.plan-hero-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: var(--sp-1);
+  color: var(--text);
+  text-decoration: none;
+  font-size: var(--fs-h2);
+  font-weight: 700;
+  line-height: 1.2;
+}
+.plan-hero-name .icon { color: var(--text-2); }
+.plan-hero-next { margin: var(--sp-5) 0 var(--sp-5); }
+.plan-hero-next-label { font-size: 13px; color: var(--accent); font-weight: 600; }
+.plan-hero-day { font-size: 30px; font-weight: 800; line-height: 1.1; text-transform: uppercase; letter-spacing: -0.01em; }
+.plan-hero-exercises { margin: var(--sp-2) 0 0; max-width: 300px; font-size: var(--fs-secondary); color: var(--text-2); line-height: 1.45; }
+
+/* Detail plánu */
+.day-card { padding: var(--sp-4); }
+.day-card.next { border-color: rgba(199, 243, 107, 0.35); }
+.day-card-head { display: flex; align-items: center; gap: var(--sp-3); }
+.day-card-titles { flex: 1; min-width: 0; }
+.day-card-title { margin: 0; font-size: var(--fs-section); font-weight: 600; }
+.day-card-meta { display: flex; align-items: center; gap: var(--sp-2); margin-top: 2px; font-size: 13px; color: var(--text-2); }
+.next-badge {
+  padding: 1px 8px;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: var(--fs-caption);
+  font-weight: 600;
+}
+.day-card-head .btn { min-height: 40px; padding: 0 var(--sp-4); border-radius: var(--r-pill); }
+.pe-lines { list-style: none; margin: var(--sp-3) 0 0; padding: 0; }
+.pe-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--sp-3);
+  padding: var(--sp-2) 0;
+  border-top: 1px solid var(--border);
+  font-size: 15px;
+}
+.pe-line a { color: var(--text); text-decoration: none; min-width: 0; }
+.pe-line-target { flex: none; color: var(--text-2); font-size: var(--fs-secondary); font-variant-numeric: tabular-nums; }
+
+/* Editor plánu */
+.day-edit { margin-bottom: var(--sp-3); overflow: hidden; }
+.day-edit-head { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-4); }
+.day-name-input {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: none;
+  font-size: 17px;
+  font-weight: 600;
+}
+.day-name-input::placeholder { color: var(--text-3); }
+.pe-edit { padding: var(--sp-3) var(--sp-2) var(--sp-3) var(--sp-4); border-top: 1px solid var(--border); }
+.pe-edit-head { display: flex; align-items: center; gap: var(--sp-1); }
+.pe-edit-name { flex: 1; min-width: 0; font-weight: 600; }
+.pe-fields {
+  display: grid;
+  grid-template-columns: 0.7fr 1.5fr 1fr 0.9fr 0.9fr;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+  padding-right: var(--sp-2);
+}
+.pe-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.pe-field > span { font-size: var(--fs-caption); color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pe-field input {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 var(--sp-1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--text);
+  text-align: center;
+  font-size: var(--fs-body);
+  font-variant-numeric: tabular-nums;
+  outline: none;
+}
+.pe-field input:focus { border-color: var(--accent); }
+.pe-field input::placeholder { color: var(--text-3); }
+.pe-range { display: flex; align-items: center; gap: 4px; color: var(--text-2); }
+.add-day { margin-top: var(--sp-1); }
+
+/* Aktívny tréning */
+.workout-meta { display: flex; flex-wrap: wrap; gap: 4px var(--sp-3); margin-top: var(--sp-2); font-size: var(--fs-secondary); color: var(--text-2); }
+.workout-clock { display: inline-flex; align-items: center; gap: 4px; color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
+.we-card { margin: var(--sp-4) var(--sp-4) 0; padding: var(--sp-3) 0 var(--sp-1); overflow: hidden; }
+.we-head { display: flex; align-items: flex-start; gap: var(--sp-2); padding: 0 var(--sp-2) 0 var(--sp-4); }
+.we-title { flex: 1; min-width: 0; text-align: left; padding: 2px 0; }
+.we-name { font-size: 17px; font-weight: 600; line-height: 1.25; }
+.we-target { margin-top: 2px; font-size: 13px; color: var(--text-2); }
+.set-grid {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 72px 60px 44px;
+  gap: var(--sp-2);
+  align-items: center;
+  padding: 0 var(--sp-3);
+}
+.set-grid-head {
+  margin-top: var(--sp-3);
+  padding-bottom: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.set-grid-head > :nth-child(n+3) { text-align: center; }
+.set-row { min-height: 52px; padding-top: 4px; padding-bottom: 4px; transition: background-color 0.15s; }
+.set-row.done { background: var(--accent-soft); }
+.set-idx { text-align: center; font-weight: 600; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.set-prev { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-secondary); color: var(--text-3); font-variant-numeric: tabular-nums; }
+.set-input {
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  padding: 0 4px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  text-align: center;
+  font-size: 17px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  outline: none;
+}
+.set-input:focus { border-color: var(--accent); }
+.set-input::placeholder { color: var(--text-3); font-weight: 500; }
+.set-input.invalid { border-color: var(--danger); }
+.set-row.done .set-input { background: transparent; border-color: transparent; }
+.set-row.done .set-input:focus { border-color: var(--accent); background: var(--card); }
+.set-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 42px;
+  border-radius: 10px;
+  background: var(--card);
+  border: 1px solid var(--border-strong);
+  color: var(--text-3);
+}
+.set-row.done .set-check { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.we-add-set {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: var(--tap);
+  color: var(--accent);
+  font-size: 15px;
+  font-weight: 500;
+}
+.workout-actions { display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); margin-top: var(--sp-8); }
+
+/* Časovač odpočinku */
+.rest-bar {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 30;
+  padding: 0 var(--sp-4) calc(var(--sp-3) + env(safe-area-inset-bottom));
+  pointer-events: none;
+}
+.with-tabbar .rest-bar { bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom)); padding-bottom: var(--sp-2); }
+.rest-inner {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+  max-width: 608px;
+  min-height: 64px;
+  margin: 0 auto;
+  padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-4);
+  border-radius: var(--r-card);
+  background: var(--card);
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  pointer-events: auto;
+}
+.rest-main { flex: 1; min-width: 0; }
+.rest-label { font-size: var(--fs-caption); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-2); }
+.rest-time { font-size: 28px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.rest-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  height: var(--tap);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.rest-btn.skip { min-width: var(--tap); color: var(--text-2); }
+.rest-btn:active { background: var(--card-pressed); }
+.rest-progress {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 3px;
+  background: var(--accent);
+  transform-origin: left;
+  transition: transform 0.25s linear;
+}
+.rest-inner.done { justify-content: center; background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-size: 17px; font-weight: 700; }
+.with-timer .screen { padding-bottom: calc(96px + var(--sp-8) + env(safe-area-inset-bottom)); }
+.with-timer.with-tabbar .screen { padding-bottom: calc(var(--tabbar-h) + 96px + var(--sp-8) + env(safe-area-inset-bottom)); }
+.with-timer .toast { bottom: calc(var(--tabbar-h) + 96px + env(safe-area-inset-bottom)); }
+
+/* História */
+.wk-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: 72px;
+  padding: var(--sp-2) var(--sp-4) var(--sp-2) var(--sp-2);
+  color: inherit;
+  text-decoration: none;
+}
+a.wk-item:active { background: var(--card); }
+.wk-date {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--r-control);
+  background: var(--card);
+}
+.wk-day { font-size: 22px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.wk-weekday { margin-top: 3px; font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--accent); }
+.summary-stats { padding: var(--sp-4); }
+.summary-stats .stat-value { font-size: 20px; }
+.summary-ex { padding: var(--sp-3) var(--sp-4) var(--sp-2); }
+.summary-ex-name { display: block; color: var(--text); text-decoration: none; font-size: 17px; font-weight: 600; }
+.summary-sets { list-style: none; margin: var(--sp-2) 0 0; padding: 0; }
+.summary-sets li {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: 36px;
+  border-top: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+.summary-sets .set-idx { width: 24px; }
+.recent { display: flex; flex-direction: column; }
+.recent-row {
+  display: flex;
+  gap: var(--sp-3);
+  padding: var(--sp-2) 0;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  text-decoration: none;
+  font-size: var(--fs-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.recent-row:first-child { border-top: 0; }
+.recent-date { flex: none; width: 88px; color: var(--text-2); }
+.recent-sets { min-width: 0; }
+
+/* Výber cvikov */
+.sheet.tall { display: flex; flex-direction: column; height: 92vh; max-height: 92vh; overflow: hidden; padding-bottom: 0; }
+.sheet.tall .sheet-body { flex: 1; min-height: 0; overflow-y: auto; margin: 0 calc(-1 * var(--sp-4)); padding: 0 var(--sp-4) var(--sp-4); }
+.sheet.tall .sheet-footer { margin: 0 calc(-1 * var(--sp-4)); padding: var(--sp-3) var(--sp-4) calc(var(--sp-3) + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); }
+.picker-head { position: sticky; top: 0; z-index: 1; margin: 0 calc(-1 * var(--sp-4)); padding: 0 0 var(--sp-2); background: var(--surface); }
+.picker-head .search { margin: 0 var(--sp-4) var(--sp-3); }
+.sheet-body .ex-item { background: var(--card); width: 100%; text-align: left; }
+.ex-item.selected { border-color: var(--accent); }
+.pick-check {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-strong);
+}
+.pick-check.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+
 /* ── Formulár ───────────────────────────────────── */
 
 .form { padding: 0 var(--sp-4); }
@@ -667,6 +995,7 @@ a.feature:active { opacity: 0.7; }
 
 @keyframes toast-in { from { opacity: 0; transform: translate(-50%, 8px); } }
 @keyframes fade-in { from { opacity: 0; } }
+@keyframes pulse { 50% { opacity: 0.35; } }
 @keyframes sheet-in { from { transform: translateY(24px); opacity: 0.6; } }
 
 @media (prefers-reduced-motion: reduce) {
@@ -675,4 +1004,69 @@ a.feature:active { opacity: 0.7; }
     transition-duration: 0.01ms !important;
   }
   .btn:active:not(:disabled) { transform: none; }
+}
+
+/* Odporúčania progresie */
+.section-caption-row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3); }
+.section-caption-row .text-btn { min-height: 0; margin: 0 var(--sp-1) var(--sp-2) 0; font-size: var(--fs-secondary); }
+.rec {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+}
+.recs .rec + .rec { border-top: 1px solid var(--border); }
+.rec-icon {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-pill);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.rec.down .rec-icon { background: rgba(245, 197, 107, 0.12); color: var(--warn); }
+.rec-main { flex: 1; min-width: 0; }
+.rec-kind { font-size: 13px; font-weight: 600; color: var(--accent); }
+.rec.down .rec-kind { color: var(--warn); }
+.rec-ex { font-size: 15px; font-weight: 600; line-height: 1.3; }
+.rec-change { margin-top: 2px; font-size: 17px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+.rec.down .rec-change { color: var(--warn); }
+.rec.compact .rec-change { color: var(--text); }
+.rec-reason { margin-top: 2px; font-size: 13px; color: var(--text-2); line-height: 1.35; }
+.rec-actions { flex: none; display: flex; align-items: center; gap: var(--sp-2); }
+.rec-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  border-radius: var(--r-pill);
+  font-size: 15px;
+  font-weight: 600;
+}
+.rec-btn.accept { padding: 0 var(--sp-4); background: var(--accent); color: var(--on-accent); }
+.rec-btn.dismiss { background: var(--card-pressed); color: var(--text-2); }
+.rec-btn:disabled { opacity: 0.5; }
+.rec-status { flex: none; font-size: 13px; color: var(--text-2); }
+.rec.dismissed .rec-change { color: var(--text-2); text-decoration: line-through; }
+.rec.accepted .rec-change { color: var(--text); }
+.rec.dismissed .rec-icon { background: var(--card-pressed); color: var(--text-3); }
+.rec.dismissed .rec-kind { color: var(--text-2); }
+/* v karte cviku počas tréningu */
+.rec.compact {
+  margin: var(--sp-3) var(--sp-3) var(--sp-1);
+  padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-3);
+  border-radius: var(--r-control);
+  background: var(--accent-soft);
+}
+.rec.compact.down { background: rgba(245, 197, 107, 0.1); }
+.rec.compact .rec-icon { width: 28px; height: 28px; background: none; }
+.rec.compact .rec-change { font-size: 15px; }
+.rec.compact .rec-btn.dismiss { background: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .rec-btn { transition: transform 0.1s; }
+  .rec-btn:active:not(:disabled) { transform: scale(0.96); }
 }

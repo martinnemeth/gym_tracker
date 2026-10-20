@@ -1,5 +1,7 @@
 import { html, useState } from '../lib.js';
 import { getExercise, exerciseUsage, deleteExercise, undeleteExercise } from '../db/exercises.js';
+import { recentPerformances } from '../db/workouts.js';
+import { formatDate, setLabel } from '../format.js';
 import { MUSCLE_GROUPS, EQUIPMENT, TRACKING_TYPES } from '../data/taxonomy.js';
 import { navigate, goBack } from '../router.js';
 import {
@@ -13,7 +15,9 @@ let techniqueCollapsed = false;
 export function ExerciseDetailScreen({ params }) {
   const { data, loading, error, reload } = useAsync(async () => {
     const ex = await getExercise(params.id);
-    return ex ? { ex, usage: await exerciseUsage(ex.id) } : null;
+    if (!ex) return null;
+    const [usage, recent] = await Promise.all([exerciseUsage(ex.id), recentPerformances(ex.id, { limit: 5 })]);
+    return { ex, usage, recent };
   }, [params.id]);
   const [checked, setChecked] = useState(() => new Set());
   const [collapsed, setCollapsed] = useState(techniqueCollapsed);
@@ -27,7 +31,7 @@ export function ExerciseDetailScreen({ params }) {
       <${EmptyState} title="Cvik neexistuje" text="Mohol byť natrvalo zmazaný." /></div>`;
   }
 
-  const { ex, usage } = data;
+  const { ex, usage, recent } = data;
   const toggleStep = (id) => setChecked((prev) => {
     const next = new Set(prev);
     next.has(id) ? next.delete(id) : next.add(id);
@@ -106,6 +110,18 @@ export function ExerciseDetailScreen({ params }) {
           <${StatCard} text value=${ex.aliases?.length ? ex.aliases.join(', ') : '–'} label="Iné názvy" />
         </div>
       </${SectionCard}>
+
+      ${recent.length > 0 && html`
+        <${SectionCard} title="Posledné tréningy" icon=${Icon.clock(20)}>
+          <div class="recent">
+            ${recent.map((r) => html`
+              <a class="recent-row" key=${r.workoutId} href=${`#/history/${r.workoutId}`}
+                onClick=${(e) => { e.preventDefault(); navigate(`/history/${r.workoutId}`); }}>
+                <span class="recent-date">${formatDate(r.performedAt)}</span>
+                <span class="recent-sets">${r.sets.map((s) => setLabel(s, ex.trackingType, { compact: true })).join(' · ')}</span>
+              </a>`)}
+          </div>
+        </${SectionCard}>`}
 
       <${ActionSheet} open=${menuOpen} title=${ex.name} onClose=${() => setMenuOpen(false)}
         actions=${[

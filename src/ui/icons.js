@@ -23,6 +23,8 @@ export const Icon = {
   check: (s = 16) => svg(html`<path d="M5 12l5 5 9-10" />`, s),
   up: (s = 18) => svg(html`<path d="M6 15l6-6 6 6" />`, s),
   down: (s = 18) => svg(html`<path d="M6 9l6 6 6-6" />`, s),
+  trendUp: (s) => svg(html`<path d="M3 17l6-6 4 4 8-8" /><path d="M15 7h6v6" />`, s),
+  trendDown: (s) => svg(html`<path d="M3 7l6 6 4-4 8 8" /><path d="M15 17h6v-6" />`, s),
   trash: (s = 20) => svg(html`<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />`, s),
   edit: (s = 20) => svg(html`<path d="M4 20h4L19 9l-4-4L4 16v4z" /><path d="M13.5 6.5l4 4" />`, s),
   sliders: (s = 20) => svg(html`<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12" /><circle cx="16" cy="6" r="2" /><circle cx="10" cy="12" r="2" /><circle cx="18" cy="18" r="2" />`, s),
@@ -40,6 +42,9 @@ export const Icon = {
   database: (s = 20) => svg(html`<ellipse cx="12" cy="5.5" rx="7" ry="2.5" /><path d="M5 5.5v13c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-13" /><path d="M5 12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5" />`, s),
   info: (s = 20) => svg(html`<circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 7.5v.5" />`, s),
   calendar: (s = 24) => svg(html`<rect x="4" y="5" width="16" height="16" rx="2" /><path d="M4 10h16M9 3v4M15 3v4" />`, s),
+  clock: (s = 24) => svg(html`<circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" />`, s),
+  play: (s = 20) => svg(html`<path d="M7 4.5v15l12-7.5z" fill="currentColor" />`, s),
+  timer: (s = 20) => svg(html`<circle cx="12" cy="13" r="8" /><path d="M12 9v4l2.5 1.5M10 2h4M19 6l1.5-1.5" />`, s),
   bulb: (s = 24) => svg(html`<path d="M9 18h6M10 21h4" /><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z" />`, s),
 };
 
