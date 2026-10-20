@@ -290,9 +290,3 @@ export function ErrorBox({ error }) {
   return html`<div class="error-box">Chyba: ${String(error?.message || error)}</div>`;
 }
 
-// ── Dočasné aliasy pre obrazovky, ktoré ešte nie sú prerobené (odstrániť v R6) ──
-export const LargeHeader = (p) => AppHeader({ ...p, large: true });
-export const NavBar = (p) => AppHeader(p);
-export const Row = SettingsRow;
-export const Chip = FilterChip;
-export const TabBar = BottomTabBar;

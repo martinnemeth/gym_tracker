@@ -2,7 +2,7 @@ import { html, useState, useEffect } from '../lib.js';
 import { useRoute, match } from '../router.js';
 import { openDb } from '../db/db.js';
 import { ensureSeeded } from '../db/seed.js';
-import { TabBar, Toast, Loading, ErrorBox } from '../ui/components.js';
+import { BottomTabBar, Toast, Loading, ErrorBox } from '../ui/components.js';
 import { PlansScreen } from './PlansScreen.js';
 import { ExercisesScreen, DeletedExercisesScreen } from './ExercisesScreen.js';
 import { ExerciseDetailScreen } from './ExerciseDetailScreen.js';
@@ -52,7 +52,7 @@ export function App() {
   return html`
     <div class=${`app ${isRoot ? 'with-tabbar' : ''}`}>
       <${Component} key=${path} params=${params} path=${path} />
-      ${isRoot && html`<${TabBar} path=${path} />`}
+      ${isRoot && html`<${BottomTabBar} path=${path} />`}
       <${Toast} />
     </div>`;
 }

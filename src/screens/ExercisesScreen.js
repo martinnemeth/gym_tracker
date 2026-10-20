@@ -4,16 +4,12 @@ import { MUSCLE_GROUPS, EQUIPMENT } from '../data/taxonomy.js';
 import { normalize } from '../util.js';
 import { navigate } from '../router.js';
 import {
-  LargeHeader, NavBar, Section, Row, Chip, EmptyState, Loading, ErrorBox, Icon, useAsync, showToast,
+  AppHeader, SearchField, FilterChip, IconButton, ExerciseListItem, BottomSheet,
+  PrimaryButton, SecondaryButton, TextButton, EmptyState, Loading, ErrorBox, Icon, useAsync, showToast,
 } from '../ui/components.js';
 
 // Filtre prežijú návrat z detailu cviku (platia do zatvorenia aplikácie).
 const filterState = { query: '', muscle: null, equipment: null };
-
-function subtitleOf(ex) {
-  const muscles = ex.muscleGroups.map((m) => MUSCLE_GROUPS[m] || m).join(', ');
-  return `${muscles} · ${EQUIPMENT[ex.equipment] || ex.equipment}`;
-}
 
 function matchesQuery(ex, q) {
   if (!q) return true;
@@ -25,6 +21,7 @@ export function ExercisesScreen() {
   const [query, setQuery] = useState(filterState.query);
   const [muscle, setMuscle] = useState(filterState.muscle);
   const [equipment, setEquipment] = useState(filterState.equipment);
+  const [sheetOpen, setSheetOpen] = useState(false);
   Object.assign(filterState, { query, muscle, equipment });
 
   const filtered = useMemo(() => {
@@ -35,7 +32,7 @@ export function ExercisesScreen() {
       && (!equipment || ex.equipment === equipment));
   }, [data, query, muscle, equipment]);
 
-  // Bez hľadania zoskupíme podľa hlavnej partie (prvá v zozname).
+  // Bez hľadania a filtra partie zoskupíme podľa hlavnej partie (prvá v zozname).
   const groups = useMemo(() => {
     if (query || muscle) return [[null, filtered]];
     const byMuscle = new Map(Object.keys(MUSCLE_GROUPS).map((k) => [k, []]));
@@ -47,40 +44,55 @@ export function ExercisesScreen() {
   }, [filtered, query, muscle]);
 
   const addButton = html`
-    <button class="icon-btn" aria-label="Nový cvik" onClick=${() => navigate('/exercises/new')}><${Icon.plus} /></button>`;
+    <${IconButton} icon=${Icon.plus()} label="Nový cvik" onClick=${() => navigate('/exercises/new')} />`;
 
   return html`
     <div class="screen">
-      <${LargeHeader} title="Cviky" right=${addButton} />
-      <div class="search">
-        <${Icon.search} />
-        <input type="search" placeholder="Hľadať cvik" value=${query}
-          onInput=${(e) => setQuery(e.currentTarget.value)} autocomplete="off" />
-        ${query && html`<button class="search-clear" aria-label="Vymazať" onClick=${() => setQuery('')}><${Icon.x} /></button>`}
+      <${AppHeader} large title="Cviky" right=${addButton} />
+
+      <div class="search-row">
+        <${SearchField} value=${query} onInput=${setQuery} placeholder="Hľadať cvik…" />
+        <${IconButton} class="square" icon=${Icon.sliders()} label="Filter vybavenia"
+          badge=${!!equipment} onClick=${() => setSheetOpen(true)} />
       </div>
-      <div class="chips-scroll">
-        <${Chip} active=${!muscle} onClick=${() => setMuscle(null)}>Všetky partie</${Chip}>
+
+      <div class="chips-scroll" role="group" aria-label="Partie">
+        <${FilterChip} active=${!muscle} onClick=${() => setMuscle(null)}>Všetky</${FilterChip}>
         ${Object.entries(MUSCLE_GROUPS).map(([k, label]) => html`
-          <${Chip} active=${muscle === k} onClick=${() => setMuscle(muscle === k ? null : k)}>${label}</${Chip}>`)}
+          <${FilterChip} active=${muscle === k} onClick=${() => setMuscle(muscle === k ? null : k)}>${label}</${FilterChip}>`)}
       </div>
-      <div class="chips-scroll">
-        <${Chip} active=${!equipment} onClick=${() => setEquipment(null)}>Všetko vybavenie</${Chip}>
-        ${Object.entries(EQUIPMENT).map(([k, label]) => html`
-          <${Chip} active=${equipment === k} onClick=${() => setEquipment(equipment === k ? null : k)}>${label}</${Chip}>`)}
-      </div>
+
+      ${equipment && html`
+        <div class="active-filters">
+          <${FilterChip} active onClick=${() => setEquipment(null)}>
+            ${EQUIPMENT[equipment]}<span class="chip-x">${Icon.x(14)}</span>
+          </${FilterChip}>
+        </div>`}
 
       ${loading && !data && html`<${Loading} />`}
       ${error && html`<${ErrorBox} error=${error} />`}
       ${data && filtered.length === 0 && html`
         <${EmptyState} title="Nič sa nenašlo"
           text=${query ? `Cvik „${query}“ nie je v knižnici.` : 'Pre zvolený filter nie sú žiadne cviky.'}
-          action=${html`<button class="btn" onClick=${() => navigate('/exercises/new')}>Vytvoriť nový cvik</button>`} />`}
+          action=${html`<${PrimaryButton} icon=${Icon.plus()} onClick=${() => navigate('/exercises/new')}>Vytvoriť nový cvik</${PrimaryButton}>`} />`}
 
-      ${groups.map(([key, list]) => html`
-        <${Section} key=${key || 'all'} title=${key ? MUSCLE_GROUPS[key] : `${list.length} cvikov`}>
-          ${list.map((ex) => html`
-            <${Row} key=${ex.id} href=${`#/exercises/${ex.id}`} title=${ex.name} subtitle=${subtitleOf(ex)} chevron />`)}
-        </${Section}>`)}
+      ${data && filtered.length > 0 && groups.map(([key, list]) => html`
+        <section class="ex-group" key=${key || 'all'}>
+          <h2 class="section-caption">${key ? MUSCLE_GROUPS[key] : `${list.length} ${list.length === 1 ? 'cvik' : list.length < 5 ? 'cviky' : 'cvikov'}`}</h2>
+          <div class="ex-list">
+            ${list.map((ex) => html`<${ExerciseListItem} key=${ex.id} exercise=${ex} href=${`#/exercises/${ex.id}`} />`)}
+          </div>
+        </section>`)}
+
+      <${BottomSheet} open=${sheetOpen} title="Vybavenie" onClose=${() => setSheetOpen(false)}
+        footer=${html`
+          <${SecondaryButton} onClick=${() => { setEquipment(null); setSheetOpen(false); }}>Zrušiť filter</${SecondaryButton}>
+          <${PrimaryButton} onClick=${() => setSheetOpen(false)}>Hotovo</${PrimaryButton}>`}>
+        <div class="chips-wrap">
+          ${Object.entries(EQUIPMENT).map(([k, label]) => html`
+            <${FilterChip} active=${equipment === k} onClick=${() => setEquipment(equipment === k ? null : k)}>${label}</${FilterChip}>`)}
+        </div>
+      </${BottomSheet}>
     </div>`;
 }
 
@@ -96,15 +108,19 @@ export function DeletedExercisesScreen() {
 
   return html`
     <div class="screen">
-      <${NavBar} title="Zmazané cviky" back="/more" backLabel="Viac" />
+      <${AppHeader} back="/more" backLabel="Nastavenia" />
+      <div class="page-head"><h1 class="page-title">Zmazané cviky</h1></div>
       ${loading && !data && html`<${Loading} />`}
       ${error && html`<${ErrorBox} error=${error} />`}
       ${data && data.length === 0 && html`<${EmptyState} title="Žiadne zmazané cviky" />`}
       ${data && data.length > 0 && html`
-        <${Section} footer="Zmazané cviky sa nezobrazujú v knižnici, ale ich história ostáva zachovaná.">
-          ${data.map((ex) => html`
-            <${Row} key=${ex.id} title=${ex.name} subtitle=${subtitleOf(ex)}
-              value=${html`<button class="btn-link" onClick=${() => restore(ex)}>Obnoviť</button>`} />`)}
-        </${Section}>`}
+        <section class="section">
+          <div class="ex-list">
+            ${data.map((ex) => html`
+              <${ExerciseListItem} key=${ex.id} exercise=${ex}
+                right=${html`<${TextButton} strong onClick=${() => restore(ex)}>Obnoviť</${TextButton}>`} />`)}
+          </div>
+          <p class="section-footer">Zmazané cviky sa nezobrazujú v knižnici, ale ich história ostáva zachovaná.</p>
+        </section>`}
     </div>`;
 }

@@ -46,9 +46,12 @@ src/
   db/seed.js                               naplnenie knižnice pri prvom spustení
   data/exercise-library.js                 predvolená knižnica (93 cvikov s technikou)
   data/taxonomy.js                         partie, vybavenie, typy sledovania
-  ui/components.js                         spoločné UI komponenty
+  ui/components.js                         spoločné UI komponenty (AppHeader, SettingsRow, ExerciseListItem…)
+  ui/icons.js                              sada SVG ikon (UI + vybavenie)
+  styles.css                               dizajnové tokeny (:root) a štýly — iba tmavý režim
   screens/                                 obrazovky
 tests/                                     E2E testy (Python + headless Chrome)
+design/                                    mockup a opis redizajnu (Performance Minimalism)
 ```
 
 ## Dátový model
@@ -69,6 +72,7 @@ Mazanie cvikov:
 ## Etapy
 
 - [x] **M1**: kostra, PWA a offline režim, DB, knižnica cvikov s technikou
+- [x] **Redizajn** (Performance Minimalism): tokeny, tmavý vzhľad, nové komponenty
 - [ ] **M2**: plány, dni a cviky, aktívny tréning, posledný výkon, časovač odpočinku, história
 - [ ] **M3**: pravidlá progresie a odporúčania
 - [ ] **M4**: analytika, grafy, stagnácia

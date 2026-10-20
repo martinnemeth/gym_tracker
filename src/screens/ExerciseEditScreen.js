@@ -2,7 +2,9 @@ import { html, useState, useEffect } from '../lib.js';
 import { getExercise, saveExercise, listExercises } from '../db/exercises.js';
 import { MUSCLE_GROUPS, EQUIPMENT, TRACKING_TYPES } from '../data/taxonomy.js';
 import { navigate, goBack } from '../router.js';
-import { NavBar, Chip, Icon, Loading, ErrorBox, EmptyState, showToast } from '../ui/components.js';
+import {
+  AppHeader, FilterChip, IconButton, TextButton, Icon, Loading, ErrorBox, EmptyState, showToast,
+} from '../ui/components.js';
 import { uuid, normalize } from '../util.js';
 
 const EMPTY = {
@@ -55,9 +57,9 @@ export function ExerciseEditScreen({ params }) {
   const backPath = isNew ? '/exercises' : `/exercises/${params.id}`;
   const title = isNew ? 'Nový cvik' : 'Upraviť cvik';
 
-  if (state.loading) return html`<div class="screen"><${NavBar} title=${title} back=${backPath} /><${Loading} /></div>`;
-  if (state.error) return html`<div class="screen"><${NavBar} title=${title} back=${backPath} /><${ErrorBox} error=${state.error} /></div>`;
-  if (!state.initial) return html`<div class="screen"><${NavBar} title=${title} back=${backPath} /><${EmptyState} title="Cvik neexistuje" /></div>`;
+  if (state.loading) return html`<div class="screen"><${AppHeader} title=${title} back=${backPath} /><${Loading} /></div>`;
+  if (state.error) return html`<div class="screen"><${AppHeader} title=${title} back=${backPath} /><${ErrorBox} error=${state.error} /></div>`;
+  if (!state.initial) return html`<div class="screen"><${AppHeader} title=${title} back=${backPath} /><${EmptyState} title="Cvik neexistuje" /></div>`;
 
   const set = (patch) => setForm((f) => ({ ...f, ...patch }));
   const dirty = JSON.stringify(form) !== JSON.stringify(state.initial);
@@ -127,9 +129,9 @@ export function ExerciseEditScreen({ params }) {
 
   return html`
     <div class="screen">
-      <${NavBar} title=${title}
-        left=${html`<button class="nav-btn" onClick=${cancel}>Zrušiť</button>`}
-        right=${html`<button class="nav-btn strong" onClick=${save} disabled=${saving}>Uložiť</button>`} />
+      <${AppHeader} title=${title}
+        left=${html`<${TextButton} onClick=${cancel}>Zrušiť</${TextButton}>`}
+        right=${html`<${TextButton} strong onClick=${save} disabled=${saving}>Uložiť</${TextButton}>`} />
 
       <form class="form" onSubmit=${(e) => { e.preventDefault(); save(); }}>
         <label class="field">
@@ -151,8 +153,8 @@ export function ExerciseEditScreen({ params }) {
           <div class="chips-wrap">
             ${Object.entries(MUSCLE_GROUPS).map(([k, label]) => {
               const idx = form.muscleGroups.indexOf(k);
-              return html`<${Chip} active=${idx >= 0} onClick=${() => toggleMuscle(k)}>
-                ${idx === 0 ? '★ ' : ''}${label}</${Chip}>`;
+              return html`<${FilterChip} active=${idx >= 0} onClick=${() => toggleMuscle(k)}>
+                ${idx === 0 ? '★ ' : ''}${label}</${FilterChip}>`;
             })}
           </div>
           ${submitted && errors.muscleGroups && html`<span class="field-error">${errors.muscleGroups}</span>`}
@@ -162,13 +164,13 @@ export function ExerciseEditScreen({ params }) {
           <span class="field-label">Vybavenie</span>
           <div class="chips-wrap">
             ${Object.entries(EQUIPMENT).map(([k, label]) => html`
-              <${Chip} active=${form.equipment === k} onClick=${() => chooseEquipment(k)}>${label}</${Chip}>`)}
+              <${FilterChip} active=${form.equipment === k} onClick=${() => chooseEquipment(k)}>${label}</${FilterChip}>`)}
           </div>
         </div>
 
         <div class="field">
           <span class="field-label">Čo sa zapisuje</span>
-          <div class="group">
+          <div class="card group">
             ${Object.entries(TRACKING_TYPES).map(([k, t]) => html`
               <label class="radio-row">
                 <input type="radio" name="tracking" checked=${form.trackingType === k}
@@ -180,24 +182,24 @@ export function ExerciseEditScreen({ params }) {
 
         <div class="field">
           <span class="field-label">Technika (checklist)</span>
-          <div class="group">
+          <div class="card group">
             ${form.technique.map((t, i) => html`
               <div class="step-row" key=${t.id}>
-                <span class="step-num">${i + 1}.</span>
+                <span class="step-badge">${i + 1}</span>
                 <textarea rows="1" value=${t.text} placeholder="Bod techniky"
                   ref=${(el) => el && requestAnimationFrame(() => autosize(el))}
                   onInput=${(e) => { autosize(e.currentTarget); updateStep(t.id, e.currentTarget.value); }} />
                 <div class="step-actions">
-                  <button type="button" class="icon-btn small" aria-label="Posunúť hore" disabled=${i === 0}
-                    onClick=${() => moveStep(i, -1)}><${Icon.up} /></button>
-                  <button type="button" class="icon-btn small" aria-label="Posunúť dole" disabled=${i === form.technique.length - 1}
-                    onClick=${() => moveStep(i, 1)}><${Icon.down} /></button>
-                  <button type="button" class="icon-btn small danger" aria-label="Zmazať bod"
-                    onClick=${() => removeStep(t.id)}><${Icon.trash} /></button>
+                  <${IconButton} class="plain" icon=${Icon.up()} label="Posunúť hore" disabled=${i === 0}
+                    onClick=${() => moveStep(i, -1)} />
+                  <${IconButton} class="plain" icon=${Icon.down()} label="Posunúť dole" disabled=${i === form.technique.length - 1}
+                    onClick=${() => moveStep(i, 1)} />
+                  <${IconButton} class="plain danger" icon=${Icon.trash(18)} label="Zmazať bod"
+                    onClick=${() => removeStep(t.id)} />
                 </div>
               </div>`)}
             <button type="button" class="row add-row" onClick=${addStep}>
-              <${Icon.plus} /><span>Pridať bod</span>
+              ${Icon.plus()}<span>Pridať bod</span>
             </button>
           </div>
         </div>

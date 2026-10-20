@@ -3,8 +3,12 @@ import { getExercise, exerciseUsage, deleteExercise, undeleteExercise } from '..
 import { MUSCLE_GROUPS, EQUIPMENT, TRACKING_TYPES } from '../data/taxonomy.js';
 import { navigate, goBack } from '../router.js';
 import {
-  NavBar, Section, Row, Tag, Loading, ErrorBox, EmptyState, Icon, useAsync, showToast,
+  AppHeader, IconButton, ActionSheet, SectionCard, StatCard, ExerciseImage, Tag, TextButton,
+  Loading, ErrorBox, EmptyState, Icon, useAsync, showToast,
 } from '../ui/components.js';
+
+// Technika je predvolene rozbalená; stav zbalenia platí počas behu aplikácie.
+let techniqueCollapsed = false;
 
 export function ExerciseDetailScreen({ params }) {
   const { data, loading, error, reload } = useAsync(async () => {
@@ -12,25 +16,29 @@ export function ExerciseDetailScreen({ params }) {
     return ex ? { ex, usage: await exerciseUsage(ex.id) } : null;
   }, [params.id]);
   const [checked, setChecked] = useState(() => new Set());
+  const [collapsed, setCollapsed] = useState(techniqueCollapsed);
+  const [menuOpen, setMenuOpen] = useState(false);
 
-  if (loading && !data) return html`<div class="screen"><${NavBar} back="/exercises" backLabel="Cviky" /><${Loading} /></div>`;
-  if (error) return html`<div class="screen"><${NavBar} back="/exercises" backLabel="Cviky" /><${ErrorBox} error=${error} /></div>`;
+  const header = (right) => html`<${AppHeader} back="/exercises" backLabel="Cviky" right=${right} />`;
+  if (loading && !data) return html`<div class="screen">${header()}<${Loading} /></div>`;
+  if (error) return html`<div class="screen">${header()}<${ErrorBox} error=${error} /></div>`;
   if (!data) {
-    return html`<div class="screen"><${NavBar} back="/exercises" backLabel="Cviky" />
+    return html`<div class="screen">${header()}
       <${EmptyState} title="Cvik neexistuje" text="Mohol byť natrvalo zmazaný." /></div>`;
   }
 
   const { ex, usage } = data;
-  const toggle = (id) => setChecked((prev) => {
+  const toggleStep = (id) => setChecked((prev) => {
     const next = new Set(prev);
     next.has(id) ? next.delete(id) : next.add(id);
     return next;
   });
+  const toggleCollapsed = () => { techniqueCollapsed = !collapsed; setCollapsed(!collapsed); };
 
   async function onDelete() {
     const soft = ex.builtIn || usage.setCount > 0 || usage.planNames.length > 0;
     const msg = soft
-      ? `Zmazať „${ex.name}“?\n\nCvik sa skryje z knižnice. ${usage.setCount ? 'História sérií ostane zachovaná. ' : ''}Obnoviť ho môžeš vo Viac → Zmazané cviky.`
+      ? `Zmazať „${ex.name}“?\n\nCvik sa skryje z knižnice. ${usage.setCount ? 'História sérií ostane zachovaná. ' : ''}Obnoviť ho môžeš v Nastaveniach → Zmazané cviky.`
       : `Natrvalo zmazať „${ex.name}“?`;
     if (!confirm(msg)) return;
     await deleteExercise(ex.id);
@@ -44,17 +52,17 @@ export function ExerciseDetailScreen({ params }) {
     reload();
   }
 
-  const editBtn = !ex.deletedAt && html`
-    <button class="nav-btn" onClick=${() => navigate(`/exercises/${ex.id}/edit`)}>Upraviť</button>`;
+  const menuButton = !ex.deletedAt && html`
+    <${IconButton} icon=${Icon.more()} label="Možnosti cviku" onClick=${() => setMenuOpen(true)} />`;
 
   return html`
     <div class="screen">
-      <${NavBar} back="/exercises" backLabel="Cviky" right=${editBtn} />
+      ${header(menuButton)}
       <div class="detail-head">
-        <h1>${ex.name}</h1>
+        <h1 class="page-title">${ex.name}</h1>
         <div class="tags">
           ${ex.muscleGroups.map((m, i) => html`<${Tag} kind=${i === 0 ? 'primary' : ''}>${MUSCLE_GROUPS[m] || m}</${Tag}>`)}
-          <${Tag} kind="muted">${EQUIPMENT[ex.equipment] || ex.equipment}</${Tag}>
+          <${Tag}>${EQUIPMENT[ex.equipment] || ex.equipment}</${Tag}>
           <${Tag} kind="muted">${TRACKING_TYPES[ex.trackingType]?.short}</${Tag}>
         </div>
       </div>
@@ -62,39 +70,47 @@ export function ExerciseDetailScreen({ params }) {
       ${ex.deletedAt && html`
         <div class="banner">
           <span>Tento cvik je zmazaný.</span>
-          <button class="btn-link" onClick=${onRestore}>Obnoviť</button>
+          <${TextButton} strong onClick=${onRestore}>Obnoviť</${TextButton}>
         </div>`}
 
-      <section class="section">
-        <div class="section-title-row">
-          <h2 class="section-title">Technika</h2>
-          ${checked.size > 0 && html`<button class="btn-link small" onClick=${() => setChecked(new Set())}>Resetovať</button>`}
-        </div>
+      <${ExerciseImage} exercise=${ex} size="hero" />
+
+      <${SectionCard} title="Technika" icon=${Icon.clipboardCheck()} collapsed=${collapsed} onToggle=${toggleCollapsed}
+        headerRight=${!collapsed && checked.size > 0 && html`
+          <button type="button" class="text-btn small" onClick=${() => setChecked(new Set())}>Resetovať</button>`}>
         ${ex.technique.length === 0
-          ? html`<div class="group"><${Row} title="Zatiaľ žiadne body" subtitle="Pridaj ich cez Upraviť." /></div>`
+          ? html`<p class="row-subtitle">Zatiaľ žiadne body. Pridaj ich cez ⋯ → Upraviť cvik.</p>`
           : html`
-            <div class="group checklist">
-              ${ex.technique.map((t) => html`
-                <button key=${t.id} class=${`check-row ${checked.has(t.id) ? 'done' : ''}`} onClick=${() => toggle(t.id)}>
-                  <span class="check-box">${checked.has(t.id) && html`<${Icon.check} />`}</span>
-                  <span>${t.text}</span>
-                </button>`)}
-            </div>`}
-      </section>
+            <ol class="steps">
+              ${ex.technique.map((t, i) => html`
+                <li key=${t.id}>
+                  <button type="button" class=${`step ${checked.has(t.id) ? 'done' : ''}`}
+                    aria-pressed=${checked.has(t.id)} onClick=${() => toggleStep(t.id)}>
+                    <span class="step-badge">${checked.has(t.id) ? Icon.check(14) : i + 1}</span>
+                    <span class="step-text">${t.text}</span>
+                  </button>
+                </li>`)}
+            </ol>`}
+      </${SectionCard}>
 
       ${ex.notes && html`
-        <${Section} title="Poznámky"><div class="row notes">${ex.notes}</div></${Section}>`}
+        <${SectionCard} title="Poznámky" icon=${Icon.notes()}>
+          <p class="notes-text">${ex.notes}</p>
+        </${SectionCard}>`}
 
-      <${Section} title="Použitie"
+      <${SectionCard} title="Použitie a štatistiky" icon=${Icon.barChart()}
         footer="Grafy progresu, rekordy a odhad 1RM pribudnú s analytikou.">
-        <${Row} title="Odcvičené série" value=${usage.setCount} />
-        <${Row} title="V plánoch" value=${usage.planNames.length ? usage.planNames.join(', ') : '–'} />
-        ${ex.aliases?.length > 0 && html`<${Row} title="Iné názvy" value=${ex.aliases.join(', ')} />`}
-      </${Section}>
+        <div class="stats">
+          <${StatCard} value=${usage.setCount} label="Odcvičené série" />
+          <${StatCard} value=${usage.planNames.length || '–'} label="V plánoch" />
+          <${StatCard} text value=${ex.aliases?.length ? ex.aliases.join(', ') : '–'} label="Iné názvy" />
+        </div>
+      </${SectionCard}>
 
-      ${!ex.deletedAt && html`
-        <${Section}>
-          <${Row} title="Zmazať cvik" danger onClick=${onDelete} />
-        </${Section}>`}
+      <${ActionSheet} open=${menuOpen} title=${ex.name} onClose=${() => setMenuOpen(false)}
+        actions=${[
+          { label: 'Upraviť cvik', icon: Icon.edit(), onClick: () => navigate(`/exercises/${ex.id}/edit`) },
+          { label: 'Zmazať cvik', icon: Icon.trash(), danger: true, onClick: onDelete },
+        ]} />
     </div>`;
 }

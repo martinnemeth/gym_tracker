@@ -2,7 +2,7 @@ import { html, useState } from '../lib.js';
 import { listExercises, syncLibrary } from '../db/exercises.js';
 import { APP_VERSION } from '../config.js';
 import { formatBytes } from '../util.js';
-import { LargeHeader, Section, Row, useAsync, showToast } from '../ui/components.js';
+import { AppHeader, Section, SettingsRow, Icon, useAsync, showToast } from '../ui/components.js';
 
 function isStandalone() {
   return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
@@ -14,6 +14,8 @@ async function storageInfo() {
   const estimate = s?.estimate ? await s.estimate() : null;
   return { persisted, estimate };
 }
+
+const soon = html`<span class="soon">Čoskoro</span>`;
 
 export function MoreScreen() {
   const storage = useAsync(storageInfo);
@@ -28,45 +30,52 @@ export function MoreScreen() {
   }
 
   async function restoreLibrary() {
+    if (busy) return;
     if (!confirm('Doplniť chýbajúce cviky z predvolenej knižnice a obnoviť zmazané?\n\nTvoje úpravy cvikov ostanú zachované.')) return;
     setBusy(true);
-    const { added, restored } = await syncLibrary({ restoreDeleted: true });
-    setBusy(false);
-    showToast(added + restored === 0 ? 'Knižnica je kompletná' : `Doplnené: ${added}, obnovené: ${restored}`);
-    deleted.reload();
+    try {
+      const { added, restored } = await syncLibrary({ restoreDeleted: true });
+      showToast(added + restored === 0 ? 'Knižnica je kompletná' : `Doplnené: ${added}, obnovené: ${restored}`);
+      deleted.reload();
+    } finally {
+      setBusy(false);
+    }
   }
 
   const st = storage.data;
   const standalone = isStandalone();
+  const canPersist = st && st.persisted === false;
 
   return html`
     <div class="screen">
-      <${LargeHeader} title="Viac" />
+      <${AppHeader} large title="Nastavenia" />
 
-      <${Section} title="Dáta"
-        footer="Záloha (export/import JSON) a export pre AI pribudnú v etape M5.">
-        <${Row} title="Záloha a obnova" value="čoskoro" disabled />
-        <${Row} title="Export pre AI analýzu" value="čoskoro" disabled />
+      <${Section} title="Dáta" footer="Záloha (export/import JSON) a export pre AI pribudnú v etape M5.">
+        <${SettingsRow} icon=${Icon.cloud()} title="Záloha a obnova" value=${soon} disabled />
+        <${SettingsRow} icon=${Icon.share()} title="Export pre AI analýzu" value=${soon} disabled />
       </${Section}>
 
       <${Section} title="Knižnica cvikov">
-        <${Row} title="Zmazané cviky" value=${deleted.data ?? ''} href="#/more/deleted-exercises" chevron />
-        <${Row} title="Doplniť / obnoviť predvolenú knižnicu" onClick=${restoreLibrary} disabled=${busy} />
+        <${SettingsRow} icon=${Icon.trash()} title="Zmazané cviky" value=${deleted.data ?? ''}
+          href="#/more/deleted-exercises" chevron />
+        <${SettingsRow} icon=${Icon.book()} title="Doplniť / obnoviť predvolenú knižnicu"
+          onClick=${restoreLibrary} disabled=${busy} />
       </${Section}>
 
       <${Section} title="Úložisko"
         footer=${standalone
           ? 'Aplikácia beží z plochy. Dáta sú uložené iba v tomto zariadení — pravidelne si rob zálohu.'
           : 'Na iPhone otvor stránku v Safari → Zdieľať → Pridať na plochu. Aplikácia z plochy funguje offline a iOS jej dáta nemaže tak ľahko ako bežnému webu.'}>
-        <${Row} title="Režim" value=${standalone ? 'Aplikácia na ploche' : 'Prehliadač'} />
-        <${Row} title="Trvalé úložisko"
-          value=${st?.persisted == null ? 'nepodporované' : st.persisted ? 'áno' : html`<button class="btn-link" onClick=${requestPersist}>Požiadať</button>`} />
-        <${Row} title="Využité miesto"
+        <${SettingsRow} icon=${Icon.smartphone()} title="Režim" value=${standalone ? 'Aplikácia na ploche' : 'Prehliadač'} />
+        <${SettingsRow} icon=${Icon.shield()} title="Trvalé úložisko"
+          value=${st?.persisted == null ? 'Nepodporované' : st.persisted ? 'Áno' : html`<span class="value-action">Požiadať</span>`}
+          onClick=${canPersist ? requestPersist : undefined} />
+        <${SettingsRow} icon=${Icon.database()} title="Využité miesto"
           value=${st?.estimate ? `${formatBytes(st.estimate.usage)} z ${formatBytes(st.estimate.quota)}` : '–'} />
       </${Section}>
 
       <${Section} title="O aplikácii">
-        <${Row} title="Verzia" value=${APP_VERSION} />
+        <${SettingsRow} icon=${Icon.info()} title="Verzia" value=${APP_VERSION} />
       </${Section}>
     </div>`;
 }

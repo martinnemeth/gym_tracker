@@ -298,6 +298,7 @@ a.row:active, button.row:active { background: var(--card-pressed); }
 .row-subtitle { font-size: var(--fs-secondary); color: var(--text-2); margin-top: 2px; }
 .row-value { color: var(--text-2); font-size: 15px; text-align: right; max-width: 55%; }
 .row-chevron { color: var(--text-3); display: flex; }
+.value-action { color: var(--accent); font-weight: 500; }
 .notes-text { padding: 0; white-space: pre-wrap; color: var(--text); line-height: 1.5; }
 
 .soon {
@@ -389,6 +390,7 @@ a.row:active, button.row:active { background: var(--card-pressed); }
 }
 .chip.active { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
 
+.chip-x { display: flex; margin-left: 6px; margin-right: -4px; }
 .active-filters { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); padding: 0 var(--sp-4) var(--sp-2); }
 
 .tags { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-3); }
@@ -516,8 +518,9 @@ a.ex-item:active { background: var(--card); }
   color: var(--card);
   pointer-events: none;
 }
+.hero > :not(.hero-graphic) { position: relative; }
+.hero .btn-primary:disabled { background: var(--accent); color: var(--on-accent); opacity: 0.35; }
 .hero-title {
-  position: relative;
   margin: 0;
   font-size: 30px;
   font-weight: 800;
@@ -525,8 +528,8 @@ a.ex-item:active { background: var(--card); }
   letter-spacing: -0.01em;
   text-transform: uppercase;
 }
-.hero-text { position: relative; margin: var(--sp-3) 0 var(--sp-6); max-width: 260px; color: var(--text-2); }
-.hero-note { position: relative; margin: var(--sp-2) 0 0; text-align: center; font-size: 13px; color: var(--text-2); }
+.hero-text { margin: var(--sp-3) 0 var(--sp-6); max-width: 260px; color: var(--text-2); }
+.hero-note { margin: var(--sp-2) 0 0; text-align: center; font-size: 13px; color: var(--text-2); }
 
 .features { display: grid; grid-template-columns: repeat(3, 1fr); padding: var(--sp-4) 0; }
 .feature {
