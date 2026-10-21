@@ -91,3 +91,13 @@ export function setsVolume(sets, typeOf) {
   return sets.reduce((sum, s) =>
     sum + (typeOf(s.exerciseId) === 'weight_reps' && s.weight > 0 && s.reps > 0 ? s.weight * s.reps : 0), 0);
 }
+
+/** Relatívny dátum: "dnes", "včera", "pred 5 dňami" (od 30 dní dátum). */
+export function formatAgo(ts, now = Date.now()) {
+  const day = (t) => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); };
+  const days = Math.round((day(now) - day(ts)) / 86400000);
+  if (days <= 0) return 'dnes';
+  if (days === 1) return 'včera';
+  if (days < 30) return `pred ${days} dňami`;
+  return formatDate(ts);
+}

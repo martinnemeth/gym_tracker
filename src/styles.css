@@ -1198,3 +1198,60 @@ a.wk-item:active { background: var(--card); }
 .spark path { fill: none; stroke: var(--text-2); stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
 .spark circle { fill: var(--accent); }
 .spark-empty { flex: none; display: inline-block; }
+
+/* ── Záloha a export pre AI ─────────────────────── */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.page-lead { margin: var(--sp-2) 0 0; font-size: 15px; line-height: 1.45; color: var(--text-2); }
+.toggle-row { cursor: pointer; }
+.switch {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: none;
+  position: relative;
+  width: 51px;
+  height: 31px;
+  margin: 0;
+  border-radius: var(--r-pill);
+  background: var(--card-pressed);
+  border: 1px solid var(--border-strong);
+  cursor: pointer;
+}
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: var(--text);
+}
+.switch:checked { background: var(--accent); border-color: var(--accent); }
+.switch:checked::after { left: 22px; background: var(--on-accent); }
+@media (prefers-reduced-motion: no-preference) {
+  .switch, .switch::after { transition: left 0.15s, background 0.15s; }
+}
+.prompt-input {
+  display: block;
+  width: 100%;
+  padding: var(--sp-3);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  background: var(--card);
+  color: var(--text);
+  font-size: var(--fs-body); /* 16 px — iOS pri menšom písme priblíži stránku */
+  line-height: 1.45;
+  resize: vertical;
+  outline: none;
+}
+.prompt-input:focus { border-color: var(--accent); }
+.export-summary { padding: var(--sp-3) var(--sp-4); }
+.export-file { font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
+.export-actions { display: flex; flex-direction: column; gap: var(--sp-2); margin-top: var(--sp-3); }

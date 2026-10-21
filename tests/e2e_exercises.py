@@ -154,7 +154,8 @@ try:
     # ── Nastavenia ──
     b.goto(BASE + '#/more', 1); b.wait_for("document.querySelector('.app-header.large')")
     check(b.eval("document.querySelector('.app-header h1').textContent") == 'Nastavenia', 'obrazovka Nastavenia')
-    check(count('.row.disabled .soon') == 2, 'nepripravené funkcie označené Čoskoro')
+    check(count('.soon') == 0 and count('a.row[href="#/more/backup"]') == 1 and count('a.row[href="#/more/ai-export"]') == 1,
+          'záloha a export pre AI sú dostupné')
     b.screenshot(f'{T}/06_nastavenia.png')
     click_text('a.row', 'Zmazané cviky'); settle(0.8)
     t = names()

@@ -1,6 +1,6 @@
 // Service worker: precache všetkých súborov aplikácie, offline-first.
 // Pri pridaní nového súboru ho dopíš do ASSETS a zvýš VERSION (a APP_VERSION v src/config.js).
-const VERSION = '0.5.0';
+const VERSION = '0.6.0';
 const CACHE = `gymtracker-${VERSION}`;
 
 const ASSETS = [
@@ -20,6 +20,7 @@ const ASSETS = [
   'src/format.js',
   'src/progression.js',
   'src/analytics.js',
+  'src/aiExport.js',
   'src/db/db.js',
   'src/db/exercises.js',
   'src/db/seed.js',
@@ -27,6 +28,7 @@ const ASSETS = [
   'src/db/workouts.js',
   'src/db/recommendations.js',
   'src/db/analytics.js',
+  'src/db/backup.js',
   'src/data/exercise-library.js',
   'src/data/taxonomy.js',
   'src/ui/components.js',
@@ -35,6 +37,7 @@ const ASSETS = [
   'src/ui/RestTimer.js',
   'src/ui/Recommendations.js',
   'src/ui/charts.js',
+  'src/ui/share.js',
   'src/screens/App.js',
   'src/screens/PlansScreen.js',
   'src/screens/PlanDetailScreen.js',
@@ -46,11 +49,16 @@ const ASSETS = [
   'src/screens/ExerciseDetailScreen.js',
   'src/screens/ExerciseEditScreen.js',
   'src/screens/MoreScreen.js',
+  'src/screens/DataScreens.js',
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting())
+    // cache: 'reload' — súbory vždy zo servera, nie z HTTP cache prehliadača (inak by nová verzia
+    // mohla dostať staré súbory, GitHub Pages ich cachuje 10 min).
+    caches.open(CACHE)
+      .then((c) => c.addAll(ASSETS.map((url) => new Request(url, { cache: 'reload' }))))
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -62,8 +70,9 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Stale-while-revalidate: okamžite z cache (offline), na pozadí stiahne novú verziu,
-// ktorá sa prejaví pri ďalšom spustení. Navigácie dostanú index.html (hash router).
+// Cache-first: všetko z cache aktuálnej verzie (offline, konzistentná sada súborov).
+// Novú verziu prinesie iba nový sw.js (iné VERSION): prehliadač ho overí pri spustení, nainštaluje
+// celú sadu súborov do novej cache a pri ďalšom spustení beží nová verzia. Navigácie dostanú index.html.
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
@@ -71,15 +80,6 @@ self.addEventListener('fetch', (event) => {
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
     const cached = await cache.match(key, { ignoreSearch: true });
-    const network = fetch(req.mode === 'navigate' ? 'index.html' : req)
-      .then((res) => {
-        if (res.ok) cache.put(key, res.clone());
-        return res;
-      });
-    if (cached) {
-      event.waitUntil(network.catch(() => {}));
-      return cached;
-    }
-    return network;
+    return cached || fetch(req.mode === 'navigate' ? 'index.html' : req);
   })());
 });

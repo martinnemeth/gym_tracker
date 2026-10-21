@@ -2,6 +2,8 @@ import { html, useState } from '../lib.js';
 import { listExercises, syncLibrary } from '../db/exercises.js';
 import { APP_VERSION } from '../config.js';
 import { formatBytes } from '../util.js';
+import { lastBackupAt } from '../db/backup.js';
+import { formatAgo } from '../format.js';
 import { AppHeader, Section, SettingsRow, Icon, useAsync, showToast } from '../ui/components.js';
 
 function isStandalone() {
@@ -15,12 +17,11 @@ async function storageInfo() {
   return { persisted, estimate };
 }
 
-const soon = html`<span class="soon">Čoskoro</span>`;
-
 export function MoreScreen() {
   const storage = useAsync(storageInfo);
   const deleted = useAsync(async () =>
     (await listExercises({ includeDeleted: true })).filter((e) => e.deletedAt).length);
+  const backup = useAsync(lastBackupAt);
   const [busy, setBusy] = useState(false);
 
   async function requestPersist() {
@@ -50,9 +51,10 @@ export function MoreScreen() {
     <div class="screen">
       <${AppHeader} large title="Nastavenia" />
 
-      <${Section} title="Dáta" footer="Záloha (export/import JSON) a export pre AI pribudnú v etape M5.">
-        <${SettingsRow} icon=${Icon.cloud()} title="Záloha a obnova" value=${soon} disabled />
-        <${SettingsRow} icon=${Icon.share()} title="Export pre AI analýzu" value=${soon} disabled />
+      <${Section} title="Dáta" footer="Dáta sú iba v tomto zariadení. Zálohu si rob pravidelne, napr. raz týždenne.">
+        <${SettingsRow} icon=${Icon.cloud()} title="Záloha a obnova"
+          value=${backup.loading ? '' : backup.data ? formatAgo(backup.data) : 'Nikdy'} href="#/more/backup" chevron />
+        <${SettingsRow} icon=${Icon.share()} title="Export pre AI analýzu" href="#/more/ai-export" chevron />
       </${Section}>
 
       <${Section} title="Knižnica cvikov">

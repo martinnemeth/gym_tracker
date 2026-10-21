@@ -22,6 +22,7 @@ python3 tests/e2e_exercises.py     # knižnica cvikov, nastavenia
 python3 tests/e2e_workouts.py      # plány, tréning, časovač, história
 python3 tests/e2e_progression.py   # pravidlá progresie, odporúčania
 python3 tests/e2e_analytics.py     # analytika, grafy, stagnácia, rekordy
+python3 tests/e2e_data.py          # záloha a obnova, export pre AI, offline cache
 ```
 
 ## Nasadenie (GitHub Pages)
@@ -34,7 +35,7 @@ python3 tests/e2e_analytics.py     # analytika, grafy, stagnácia, rekordy
 Pri vydaní novej verzie:
 - Zvýš `VERSION` v `sw.js` a `APP_VERSION` v `src/config.js`.
 - Každý nový súbor dopíš do `ASSETS` v `sw.js`, inak nebude dostupný offline.
-- Aplikácia na telefóne si novú verziu stiahne na pozadí a použije ju pri ďalšom spustení.
+- Aplikácia na telefóne si pri spustení overí `sw.js`. Ak je iná verzia, stiahne na pozadí celú novú sadu súborov a použije ju pri ďalšom spustení (na iPhone appku úplne zavri a otvor). Bez zvýšenia `VERSION` sa zmeny do telefónu nedostanú.
 
 ## Štruktúra
 
@@ -46,6 +47,7 @@ src/
   router.js                                hash router
   format.js                                čísla (desatinná čiarka), časy, popisy sérií a cieľov
   progression.js                           pravidlá progresie (čisté funkcie, bez DB)
+  aiExport.js                              export pre AI: denormalizovaný JSON a CSV (čisté funkcie)
   analytics.js                             analytika: e1RM, nárast v %, trend a stagnácia, objem, rekordy (čisté funkcie)
   db/db.js                                 IndexedDB schéma + promise wrapper
   db/exercises.js                          CRUD cvikov, mäkké mazanie, sync knižnice
@@ -53,6 +55,7 @@ src/
   db/plans.js                              plány, dni, cviky v pláne, aktívny plán
   db/workouts.js                           tréningy, série, posledný výkon, deň na rade
   db/recommendations.js                    odporúčania: vyhodnotenie tréningu, prijatie / zamietnutie, deload zo stagnácie
+  db/backup.js                             záloha (kópia všetkých store-ov) a obnova v jednej transakcii
   db/analytics.js                          načítanie tréningov plánu a sedení cviku pre analytiku
   data/exercise-library.js                 predvolená knižnica (93 cvikov s technikou)
   data/taxonomy.js                         partie, vybavenie, typy sledovania
@@ -61,6 +64,7 @@ src/
   ui/ExercisePicker.js                     výber cvikov z knižnice (spodný panel)
   ui/RestTimer.js                          časovač odpočinku (lišta, zvuk, uložený stav)
   ui/Recommendations.js                    karta a položka odporúčania
+  ui/share.js                              zdieľanie / stiahnutie súboru, schránka, čítanie súboru
   ui/charts.js                             SVG grafy bez knižnice: čiarový, stĺpcový, sparkline
   styles.css                               dizajnové tokeny (:root) a štýly — iba tmavý režim
   screens/                                 obrazovky
@@ -77,7 +81,7 @@ design/                                    mockup a opis redizajnu (Performance 
 | `workouts` | tréningy (`active` / `done`) viazané na plán a deň; názov plánu a dňa aj cieľ cvikov sú uložené ako snímka |
 | `sets` | odcvičené série; index `[exerciseId, performedAt]` pre „naposledy" a analytiku |
 | `recommendations` | odporúčania progresie: cieľ pred a po, dôvod, stav `pending` / `accepted` / `dismissed` / `superseded` |
-| `settings` | key/value nastavenia |
+| `settings` | key/value nastavenia (`libraryVersion`, `restTimer`, `lastBackupAt`, `aiPrompt`) |
 
 Mazanie cvikov:
 - Cvik z predvolenej knižnice a cvik, ktorý má históriu alebo je v nejakom pláne, sa zmaže **mäkko**: dostane `deletedAt` a dá sa obnoviť.
@@ -113,6 +117,16 @@ Analytika (`src/analytics.js`, obrazovky Plán → Analytika a Cvik → Progres 
 - **Osobné rekordy** cviku a odznak „Nový rekord" v súhrne tréningu (metrika prekonala všetky predchádzajúce tréningy).
 - Analytika plánu počíta iba s tréningmi plánu; analytika v detaile cviku naprieč všetkými plánmi.
 
+Záloha a obnova (Nastavenia → Záloha a obnova):
+- Záloha je JSON s kópiou všetkých store-ov vrátane ID (`app`, `format`, `appVersion`, `dbVersion`, `exportedAt`, `stores`). Na iPhone sa otvorí zdieľacie menu (Uložiť do Súborov, Mail…), inde sa súbor stiahne.
+- Obnova skontroluje súbor (cudzí JSON, novšia verzia DB, záznamy bez ID) a po potvrdení **nahradí** všetky dáta v jednej transakcii — pri chybe sa nezmení nič. Lokálny stav zariadenia (časovač, čas poslednej zálohy) sa nezálohuje.
+- Na obrazovke Plány sa zobrazí pripomienka, ak posledná záloha je staršia ako 14 dní.
+
+Export pre AI (Nastavenia → Export pre AI analýzu):
+- Rozsah (všetky tréningy alebo plán) a obdobie; formát JSON alebo CSV (jedna séria na riadok).
+- JSON: mená cvikov a partií namiesto ID, miestne ISO dátumy, série vnorené v tréningoch s odhadom 1RM, ciele a pravidlá slovami, progres cvikov (zmena v %, trend, rekordy) a história odporúčaní.
+- Voliteľný prompt (upraviteľný, pamätá sa) — v JSON ako pole `prompt`, pri CSV sa pridá pred dáta pri kopírovaní do schránky.
+
 ## Etapy
 
 - [x] **M1**: kostra, PWA a offline režim, DB, knižnica cvikov s technikou
@@ -120,4 +134,4 @@ Analytika (`src/analytics.js`, obrazovky Plán → Analytika a Cvik → Progres 
 - [x] **M2**: plány, dni a cviky, aktívny tréning, posledný výkon, časovač odpočinku, história
 - [x] **M3**: pravidlá progresie a odporúčania
 - [x] **M4**: analytika, grafy, stagnácia
-- [ ] **M5**: záloha (export a import JSON), export pre AI
+- [x] **M5**: záloha (export a import JSON), export pre AI

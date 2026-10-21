@@ -5,8 +5,10 @@ import { getActiveWorkout, nextDayOf } from '../db/workouts.js';
 import { listExercises } from '../db/exercises.js';
 import { listPending } from '../db/recommendations.js';
 import { planWorkouts } from '../db/analytics.js';
+import { lastBackupAt } from '../db/backup.js';
+import { countByIndex } from '../db/db.js';
 import { planAnalytics, DEFAULT_STAGNATION } from '../analytics.js';
-import { formatClock, plural } from '../format.js';
+import { formatClock, formatAgo, plural } from '../format.js';
 import {
   AppHeader, PrimaryButton, SecondaryButton, IconButton, Section, SettingsRow, Icon,
   Loading, ErrorBox, useAsync, useNow,
@@ -26,6 +28,9 @@ const PlateGraphic = () => html`
     <text x="100" y="148" text-anchor="middle" fill="currentColor" font-size="14" font-weight="700"
       font-family="-apple-system, system-ui, sans-serif">KG</text>
   </svg>`;
+
+// Pripomienka zálohy, ak posledná je staršia ako 14 dní (alebo žiadna a už existujú tréningy).
+const BACKUP_REMIND_MS = 14 * 86400000;
 
 /** Karta prebiehajúceho tréningu — návrat do neho. */
 function ResumeCard({ workout }) {
@@ -123,7 +128,11 @@ export function PlansScreen() {
         stagnation: { ...DEFAULT_STAGNATION, ...activePlan.stagnation },
       }).alerts
       : [];
-    return { plans, activeWorkout, activePlan, nextDay, exercises, pending: sortByOrder(pending, order), alerts };
+    const [done, lastBackup] = await Promise.all([countByIndex('workouts', 'status', 'done'), lastBackupAt()]);
+    const backupDue = done > 0 && (!lastBackup || Date.now() - lastBackup > BACKUP_REMIND_MS);
+    return {
+      plans, activeWorkout, activePlan, nextDay, exercises, pending: sortByOrder(pending, order), alerts, backupDue, lastBackup,
+    };
   });
 
   const addButton = html`<${IconButton} icon=${Icon.plus()} label="Nový plán" onClick=${() => navigate('/plans/new')} />`;
@@ -131,7 +140,7 @@ export function PlansScreen() {
   if (loading && !data) return html`<div class="screen"><${AppHeader} large title="Plány" /><${Loading} /></div>`;
   if (error) return html`<div class="screen"><${AppHeader} large title="Plány" /><${ErrorBox} error=${error} /></div>`;
 
-  const { plans, activeWorkout, activePlan, nextDay, exercises, pending, alerts } = data;
+  const { plans, activeWorkout, activePlan, nextDay, exercises, pending, alerts, backupDue, lastBackup } = data;
 
   return html`
     <div class="screen">
@@ -153,6 +162,13 @@ export function PlansScreen() {
             <${SettingsRow} icon=${html`<span class="warn-icon">${Icon.flat(20)}</span>`} title="Stagnácia"
               subtitle=${alerts.map((r) => exercises.get(r.exerciseId)?.name).filter(Boolean).join(' · ')}
               value=${alerts.length} href=${`#/plans/${activePlan.id}/analytics`} chevron />`}
+        </${Section}>`}
+
+      ${backupDue && !activeWorkout && html`
+        <${Section}>
+          <${SettingsRow} icon=${html`<span class="warn-icon">${Icon.cloud()}</span>`} title="Zálohuj svoje dáta"
+            subtitle=${lastBackup ? `Posledná záloha ${formatAgo(lastBackup)}` : 'Zatiaľ nemáš žiadnu zálohu'}
+            href="#/more/backup" chevron />
         </${Section}>`}
 
       ${plans.length > 0 && html`

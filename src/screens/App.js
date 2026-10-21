@@ -14,6 +14,7 @@ import { ExercisesScreen, DeletedExercisesScreen } from './ExercisesScreen.js';
 import { ExerciseDetailScreen } from './ExerciseDetailScreen.js';
 import { ExerciseEditScreen } from './ExerciseEditScreen.js';
 import { MoreScreen } from './MoreScreen.js';
+import { BackupScreen, AiExportScreen } from './DataScreens.js';
 
 // Poradie je dôležité: špecifickejšie cesty skôr.
 const ROUTES = [
@@ -33,6 +34,8 @@ const ROUTES = [
   ['/exercises/:id', ExerciseDetailScreen],
   ['/more', MoreScreen, true],
   ['/more/deleted-exercises', DeletedExercisesScreen],
+  ['/more/backup', BackupScreen],
+  ['/more/ai-export', AiExportScreen],
 ];
 
 function resolve(path) {
