@@ -72,7 +72,7 @@ export function App() {
   return html`
     <div class=${`app ${isRoot ? 'with-tabbar' : ''} ${rest ? 'with-timer' : ''}`}>
       <${Component} key=${path} params=${params} path=${path} />
-      ${rest && html`<${RestTimer} />`}
+      ${rest && html`<${RestTimer} modal=${path.startsWith('/workout/')} />`}
       ${isRoot && html`<${BottomTabBar} path=${path} />`}
       <${Toast} />
     </div>`;

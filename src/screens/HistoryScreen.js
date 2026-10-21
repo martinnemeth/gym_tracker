@@ -105,9 +105,15 @@ export function WorkoutSummaryScreen({ params }) {
   }
   const typeOf = (id) => exercises.get(id)?.trackingType;
   const volume = setsVolume(sets, typeOf);
+  // Poradie, v akom sa cviky naozaj cvičili: podľa času prvej zapísanej série
+  // (pri rovnakom čase, napr. séria doplnená v histórii, rozhoduje poradie v tréningu).
   const blocks = workout.exercises
-    .map((we) => ({ we, sets: sets.filter((s) => s.workoutExerciseId === we.id) }))
-    .filter((b) => b.sets.length);
+    .map((we, i) => {
+      const list = sets.filter((s) => s.workoutExerciseId === we.id);
+      return { we, sets: list, i, first: Math.min(...list.map((s) => s.performedAt ?? Infinity)) };
+    })
+    .filter((b) => b.sets.length)
+    .sort((a, b) => a.first - b.first || a.i - b.i);
 
   async function onDelete() {
     if (!confirm('Natrvalo zmazať tréning z histórie?')) return;

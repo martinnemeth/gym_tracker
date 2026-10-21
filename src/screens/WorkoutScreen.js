@@ -1,4 +1,4 @@
-import { html, useState, useEffect } from '../lib.js';
+import { html, useState, useEffect, useRef } from '../lib.js';
 import {
   getWorkout, getWorkoutSets, saveWorkout, saveSet, deleteSet, deleteWorkoutExerciseSets,
   finishWorkout, deleteWorkout, getActiveWorkout, startWorkout, lastPerformance, newWorkoutExercise,
@@ -13,7 +13,8 @@ import {
   Loading, ErrorBox, Icon, useNow, showToast,
 } from '../ui/components.js';
 import { ExercisePicker } from '../ui/ExercisePicker.js';
-import { startRest, stopRest } from '../ui/RestTimer.js';
+import { startRest, stopRest, unlockAudio, useRestDismissed } from '../ui/RestTimer.js';
+import { SetTimer } from '../ui/SetTimer.js';
 import { RecommendationItem, useRecommendationActions } from '../ui/Recommendations.js';
 
 /** Začne tréning (dňa plánu alebo voľný). Ak už iný prebieha, ponúkne návrat doň. */
@@ -87,6 +88,14 @@ export function WorkoutScreen({ params }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [menu, setMenu] = useState(null); // 'workout' | id cviku v tréningu
   const [recs, setRecs] = useState(new Map()); // planExerciseId → čakajúce odporúčanie (iba počas tréningu)
+  const [current, setCurrent] = useState(null); // kľúč riadku, ktorý je na rade (zvýraznený)
+  const [stopwatch, setStopwatch] = useState(null); // { we, i, defaults, target } — bežia stopky časovej série
+
+  // Keď používateľ zavrie pauzu ťuknutím, kurzor skočí do riadku, ktorý je na rade.
+  // Handler sa mení s každým renderom; poslucháč je stabilný a volá aktuálny cez ref.
+  const onRestDismissedRef = useRef(() => {});
+  const [onRestDismissed] = useState(() => () => onRestDismissedRef.current());
+  useRestDismissed(onRestDismissed);
 
   const active = workout?.status === 'active';
   const editing = workout?.status === 'done';
@@ -146,8 +155,8 @@ export function WorkoutScreen({ params }) {
     await saveWorkout(next);
   }
 
-  function rowsOf(we) {
-    const weSets = sets.filter((s) => s.workoutExerciseId === we.id);
+  function rowsOf(we, list = sets) {
+    const weSets = list.filter((s) => s.workoutExerciseId === we.id);
     const byIndex = new Map(weSets.map((s) => [s.setIndex, s]));
     const count = Math.max(we.setCount, ...weSets.map((s) => s.setIndex + 1));
     return { byIndex, count };
@@ -182,7 +191,21 @@ export function WorkoutScreen({ params }) {
     document.querySelector(`[data-key="${key}"][data-field="${field}"]`)?.focus();
   }
 
-  async function toggleRow(we, i, defaults, logged) {
+  /** Prvý nezapísaný riadok po riadku (weId, i) — v tom istom cviku, potom v ďalších. */
+  function nextOpenRow(weId, i, list) {
+    const start = workout.exercises.findIndex((x) => x.id === weId);
+    for (let w = Math.max(0, start); w < workout.exercises.length; w++) {
+      const x = workout.exercises[w];
+      const { byIndex, count } = rowsOf(x, list);
+      for (let r = w === start ? i + 1 : 0; r < count; r++) if (!byIndex.has(r)) return `${x.id}:${r}`;
+    }
+    return null;
+  }
+
+  /** Pole, do ktorého sa píše ako prvé (pri vlastnej váhe je prídavná váha nepovinná). */
+  const firstField = (type) => (type === 'weight_reps' ? 'weight' : type === 'bodyweight_reps' ? 'reps' : null);
+
+  async function toggleRow(we, i, defaults, logged, override = {}) {
     const key = `${we.id}:${i}`;
     const type = typeOf(we.exerciseId);
     if (logged) {
@@ -195,6 +218,7 @@ export function WorkoutScreen({ params }) {
       weight: readField(key, 'weight', defaults.weight),
       reps: readField(key, 'reps', defaults.reps),
       durationSec: readField(key, 'durationSec', defaults.durationSec),
+      ...override,
     };
     const bad = validate(type, v);
     if (bad) {
@@ -214,10 +238,34 @@ export function WorkoutScreen({ params }) {
       durationSec: type === 'time' ? Math.round(v.durationSec) : null,
       performedAt: editing ? workout.finishedAt : Date.now(),
     });
-    setSets((ss) => [...ss, set]);
+    const nextSets = [...sets, set];
+    setSets(nextSets);
     clearDraft(key);
     setInvalid(null);
-    if (active) startRest(we.target.restSec ?? DEFAULT_REST_SEC);
+    if (active) {
+      const next = nextOpenRow(we.id, i, nextSets);
+      setCurrent(next);
+      if (next) {
+        setTimeout(() => document.querySelector(`[data-row="${next}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 50);
+      }
+      startRest(we.target.restSec ?? DEFAULT_REST_SEC);
+    }
+  }
+
+  /** Stopky časovej série: cieľ z poľa (alebo predvolený), inak chyba ako pri zápise. */
+  function startStopwatch(we, i, defaults) {
+    const key = `${we.id}:${i}`;
+    const target = readField(key, 'durationSec', defaults.durationSec);
+    if (!(target > 0)) {
+      setInvalid({ key, field: 'durationSec' });
+      focusField(key, 'durationSec');
+      return;
+    }
+    unlockAudio();
+    stopRest();
+    document.activeElement?.blur?.();
+    setCurrent(key);
+    setStopwatch({ we, i, defaults, target: Math.round(target) });
   }
 
   /** Úprava už odcvičenej série — uloží sa pri opustení poľa. */
@@ -314,6 +362,23 @@ export function WorkoutScreen({ params }) {
     goBack(back);
   }
 
+  // Riadok na rade: posledný nastavený, ak je ešte nezapísaný; inak prvý nezapísaný v tréningu.
+  const currentKey = !active ? null : (() => {
+    if (current) {
+      const [weId, idx] = current.split(':');
+      const we = workout.exercises.find((x) => x.id === weId);
+      if (we) { const { byIndex, count } = rowsOf(we); if (+idx < count && !byIndex.has(+idx)) return current; }
+    }
+    return workout.exercises.length ? nextOpenRow(workout.exercises[0].id, -1, sets) : null;
+  })();
+  onRestDismissedRef.current = () => {
+    if (!currentKey) return;
+    const we = workout.exercises.find((x) => x.id === currentKey.split(':')[0]);
+    const field = we && firstField(typeOf(we.exerciseId));
+    if (field) focusField(currentKey, field);
+    else document.querySelector(`[data-row="${currentKey}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  };
+
   const menuWe = menu && menu !== 'workout' ? workout.exercises.find((x) => x.id === menu) : null;
   const menuWeIndex = menuWe ? workout.exercises.indexOf(menuWe) : -1;
   const menuWeRows = menuWe ? rowsOf(menuWe) : null;
@@ -384,14 +449,19 @@ export function WorkoutScreen({ params }) {
                   onInput=${(e) => setDraft(key, field, e.currentTarget.value)}
                   onBlur=${() => logged && commitLogged(we, i, logged)} />`;
               return html`
-                <div class=${`set-grid set-row ${logged ? 'done' : ''}`} key=${key}>
+                <div class=${`set-grid set-row ${logged ? 'done' : ''} ${key === currentKey ? 'current' : ''}`} key=${key} data-row=${key}>
                   <span class="set-idx">${i + 1}</span>
                   <span class="set-prev">${lastPerf?.sets[i] ? setLabel(lastPerf.sets[i], type, { compact: true }) : '–'}</span>
                   ${input(wField, true)}
                   ${input(rField, false)}
-                  <button type="button" class="set-check" aria-pressed=${!!logged}
-                    aria-label=${logged ? `Zrušiť sériu ${i + 1}` : `Zapísať sériu ${i + 1}`}
-                    onClick=${() => toggleRow(we, i, defaults, logged)}>${Icon.check(18)}</button>
+                  ${type === 'time' && active && !logged && !(d.durationSec || '').trim()
+                    ? html`
+                      <button type="button" class="set-check play" aria-label=${`Spustiť stopky pre sériu ${i + 1}`}
+                        onClick=${() => startStopwatch(we, i, defaults)}>${Icon.play(18)}</button>`
+                    : html`
+                      <button type="button" class="set-check" aria-pressed=${!!logged}
+                        aria-label=${logged ? `Zrušiť sériu ${i + 1}` : `Zapísať sériu ${i + 1}`}
+                        onClick=${() => toggleRow(we, i, defaults, logged)}>${Icon.check(18)}</button>`}
                 </div>`;
             })}
             <button type="button" class="we-add-set" onClick=${() => addSet(we)}>${Icon.plus(18)}<span>Pridať sériu</span></button>
@@ -408,6 +478,16 @@ export function WorkoutScreen({ params }) {
           <${PrimaryButton} block icon=${Icon.check()} onClick=${finish}>Dokončiť tréning</${PrimaryButton}>
           <${TextButton} danger onClick=${() => discard()}>Zahodiť tréning</${TextButton}>
         </section>`}
+
+      ${stopwatch && html`
+        <${SetTimer} key=${`${stopwatch.we.id}:${stopwatch.i}`}
+          name=${exercises.get(stopwatch.we.exerciseId)?.name || 'Séria'} targetSec=${stopwatch.target}
+          onCancel=${() => setStopwatch(null)}
+          onFinish=${(sec) => {
+            const { we, i, defaults } = stopwatch;
+            setStopwatch(null);
+            toggleRow(we, i, defaults, null, { durationSec: sec });
+          }} />`}
 
       <${ExercisePicker} open=${pickerOpen} onClose=${() => setPickerOpen(false)} onPick=${addExercises} />
 

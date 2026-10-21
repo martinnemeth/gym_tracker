@@ -989,6 +989,12 @@ a.feature:active { opacity: 0.7; }
 }
 .set-check:active { transform: scale(0.92); }
 .set-row.done .set-check { background: var(--accent); border-color: var(--accent); color: var(--on-accent); animation: pop var(--dur) var(--ease); }
+/* Riadok, ktorý je na rade */
+.set-row.current { border-color: var(--accent-line); background: var(--accent-faint); }
+.set-row.current .set-idx { color: var(--accent); }
+/* Stopky časovej série */
+.set-check.play { border-color: var(--accent-line); color: var(--accent); background: var(--accent-faint); }
+.set-check.play .icon { margin-left: 2px; }
 .we-add-set {
   display: flex;
   align-items: center;
@@ -1011,6 +1017,14 @@ a.feature:active { opacity: 0.7; }
 .workout-actions { display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); margin-top: var(--sp-8); }
 .workout-actions .text-btn.danger { font-size: 16px; font-weight: 500; opacity: 0.9; }
 
+/* Kruhový ukazovateľ času (pauza, stopky série) */
+.timer-ring { position: relative; flex: none; display: flex; align-items: center; justify-content: center; color: var(--accent); }
+.timer-ring-svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+.timer-ring circle { fill: none; }
+.timer-ring-track { stroke: rgba(255, 255, 255, 0.08); }
+.timer-ring-value { stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset 0.25s linear; }
+.timer-ring-center { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: var(--text); }
+
 /* Časovač odpočinku — plávajúci panel nad obsahom */
 .rest-bar {
   position: fixed;
@@ -1030,7 +1044,7 @@ a.feature:active { opacity: 0.7; }
   max-width: 608px;
   min-height: 76px;
   margin: 0 auto;
-  padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-3);
+  padding: var(--sp-3);
   border-radius: 22px;
   background:
     radial-gradient(60% 120% at 0% 0%, rgba(199, 243, 107, 0.12) 0%, rgba(199, 243, 107, 0) 70%),
@@ -1039,11 +1053,7 @@ a.feature:active { opacity: 0.7; }
   box-shadow: var(--shadow-float);
   pointer-events: auto;
 }
-.rest-ring { position: relative; flex: none; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; color: var(--accent); }
-.rest-ring-svg { position: absolute; inset: 0; transform: rotate(-90deg); }
-.rest-ring circle { fill: none; stroke-width: 3; }
-.rest-ring-track { stroke: rgba(255, 255, 255, 0.08); }
-.rest-ring-value { stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset 0.25s linear; }
+.rest-expand { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--sp-3); text-align: left; }
 .rest-main { flex: 1; min-width: 0; }
 .rest-label { font-size: var(--fs-caption); font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
 .rest-time { font-size: 32px; font-weight: 800; line-height: 1.05; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
@@ -1069,16 +1079,88 @@ a.feature:active { opacity: 0.7; }
 .with-timer.with-tabbar .screen { padding-bottom: calc(var(--tabbar-h) + 108px + var(--sp-8) + env(safe-area-inset-bottom)); }
 .with-timer .toast { bottom: calc(var(--tabbar-h) + 108px + env(safe-area-inset-bottom)); }
 @keyframes rest-in { from { transform: translateY(16px); opacity: 0; } }
+
+/* Veľké okno uprostred obrazovky (pauza počas tréningu, stopky série) */
+.rest-bar.modal, .timer-modal {
+  inset: 0;
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(env(safe-area-inset-top) + var(--sp-4)) var(--sp-4) calc(env(safe-area-inset-bottom) + var(--sp-4));
+  background: rgba(5, 6, 8, 0.78);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  pointer-events: auto;
+  animation: fade-in var(--dur) ease-out;
+}
+.timer-modal { position: fixed; }
+.rest-bar.modal .rest-inner, .timer-card {
+  flex-direction: column;
+  gap: var(--sp-5);
+  width: 100%;
+  max-width: 340px;
+  min-height: 0;
+  padding: var(--sp-8) var(--sp-5) var(--sp-4);
+  border-radius: 28px;
+  background:
+    radial-gradient(80% 60% at 50% 0%, rgba(199, 243, 107, 0.14) 0%, rgba(199, 243, 107, 0) 70%),
+    linear-gradient(180deg, #20262E 0%, #171B21 100%);
+  border: 1px solid rgba(199, 243, 107, 0.2);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+  animation: modal-in 0.28s var(--ease);
+}
+.timer-card { position: relative; display: flex; align-items: center; }
+.rest-bar.modal .rest-label, .timer-card .rest-label { font-size: 14px; }
+.rest-bar.modal .rest-time, .timer-card .rest-time { font-size: 64px; line-height: 1; margin-top: 4px; }
+.rest-bar.modal .rest-actions, .timer-card .rest-actions { gap: var(--sp-4); padding-left: 0; border-left: 0; }
+.rest-bar.modal .rest-btn, .timer-card .rest-btn { width: 60px; height: 60px; font-size: 17px; }
+.rest-minimize {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: var(--tap);
+  padding: 0 var(--sp-3);
+  color: var(--text-2);
+  font-size: 15px;
+  font-weight: 500;
+}
+.rest-bar.modal .rest-inner.done { background: var(--grad-accent), linear-gradient(180deg, #20262E 0%, #171B21 100%); color: var(--text); padding-bottom: var(--sp-8); }
+.rest-done-icon { display: flex; align-items: center; justify-content: center; width: 72px; height: 72px; border-radius: 50%; background: var(--accent); color: var(--on-accent); animation: pop 0.3s var(--ease); }
+.rest-done-text { margin-top: var(--sp-3); font-size: 20px; font-weight: 700; }
+.rest-bar.modal .rest-inner.done .rest-done-text { color: var(--text); }
+.timer-name { max-width: 100%; font-size: 18px; font-weight: 700; text-align: center; line-height: 1.25; }
+.timer-card.prep .timer-ring-value { stroke: var(--text-2); }
+.timer-card .prep-count { font-size: 80px; color: var(--accent); }
+.timer-card.done { padding-bottom: var(--sp-8); }
+.timer-stop {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 60px;
+  padding: 0 var(--sp-6);
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 17px;
+  font-weight: 700;
+  transition: background-color var(--dur-fast), transform 0.1s;
+}
+.timer-stop:active { background: var(--accent-pressed); transform: scale(0.97); }
+.timer-stop-icon { width: 14px; height: 14px; border-radius: 3px; background: currentColor; }
+.timer-hint { margin: calc(-1 * var(--sp-2)) 0 0; font-size: 13px; color: var(--text-2); text-align: center; }
+@keyframes modal-in { from { transform: scale(0.94) translateY(12px); opacity: 0; } }
+
 /* Úzke displeje: bez ikony s kruhom, nech sa ovládanie zmestí */
 @media (max-width: 359px) {
+  .rest-bar:not(.modal) .timer-ring { display: none; }
   .hero-graphic { right: -96px; width: 220px; height: 220px; }
   .feature-chevron { display: none; }
   /* Editor plánu: polia cviku v dvoch riadkoch (Série + Opakovania / kg, Pauza, Krok) */
   .pe-edit .pe-fields { grid-template-columns: repeat(6, minmax(0, 1fr)); row-gap: var(--sp-3); }
   .pe-edit .pe-field { grid-column: span 2; }
   .pe-edit .pe-field:nth-child(2) { grid-column: span 4; }
-  .rest-ring { display: none; }
-  .rest-time { font-size: 28px; }
+  .rest-bar:not(.modal) .rest-time { font-size: 28px; }
   .set-grid { grid-template-columns: 22px minmax(0, 1fr) 64px 56px 44px; gap: 6px; }
 }
 

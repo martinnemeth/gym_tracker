@@ -6,8 +6,9 @@ import { Icon } from './icons.js';
 // Časovač odpočinku. Stav je čas konca (endsAt), takže odpočet sedí aj po uspaní
 // telefónu; ukladá sa do settings, aby prežil reštart aplikácie.
 
-let timer = null; // { endsAt, total } — total v sekundách
+let timer = null; // { endsAt, total, minimized } — total v sekundách; minimized: zmenšený do spodného panela
 const listeners = new Set();
+const dismissListeners = new Set(); // volané synchrónne, keď pauzu zavrie používateľ (ťuknutím)
 
 function emit({ persist = true } = {}) {
   listeners.forEach((l) => l(timer));
@@ -23,7 +24,7 @@ export async function loadRestTimer() {
 export function startRest(sec) {
   unlockAudio();
   if (!sec || sec <= 0) return;
-  timer = { endsAt: Date.now() + sec * 1000, total: sec };
+  timer = { endsAt: Date.now() + sec * 1000, total: sec, minimized: false };
   emit();
 }
 
@@ -31,7 +32,7 @@ export function adjustRest(deltaSec) {
   if (!timer) return;
   const endsAt = timer.endsAt + deltaSec * 1000;
   if (endsAt <= Date.now()) return stopRest();
-  timer = { endsAt, total: Math.max(1, timer.total + deltaSec) };
+  timer = { ...timer, endsAt, total: Math.max(1, timer.total + deltaSec) };
   emit();
 }
 
@@ -39,6 +40,29 @@ export function stopRest() {
   if (!timer) return;
   timer = null;
   emit();
+}
+
+/** Zmenší veľké okno pauzy do spodného panela (alebo ho znova zväčší). */
+export function setRestMinimized(minimized) {
+  if (!timer || !!timer.minimized === minimized) return;
+  timer = { ...timer, minimized };
+  emit();
+}
+
+/**
+ * Pauzu zavrel používateľ ťuknutím. Poslucháči sa volajú synchrónne v rámci ťuknutia —
+ * len vtedy iOS dovolí presunúť kurzor do poľa a otvoriť klávesnicu.
+ */
+function dismissRest() {
+  stopRest();
+  dismissListeners.forEach((l) => l());
+}
+
+export function useRestDismissed(fn) {
+  useEffect(() => {
+    dismissListeners.add(fn);
+    return () => dismissListeners.delete(fn);
+  }, [fn]);
 }
 
 export function useRestTimer() {
@@ -71,7 +95,7 @@ export function unlockAudio() {
   } catch { /* bez zvuku */ }
 }
 
-function beep() {
+export function beep() {
   try {
     navigator.vibrate?.([200, 100, 200]);
     if (!audio) return;
@@ -92,11 +116,30 @@ function beep() {
   } catch { /* bez zvuku */ }
 }
 
-// ── Lišta ───────────────────────────────────────────
+// ── Zobrazenie ──────────────────────────────────
 
-const DONE_SHOW_MS = 4000;
+const DONE_SHOW_MS = 1500;
 
-export function RestTimer() {
+/** Kruhový ukazovateľ zostávajúceho času. progress 1 → plný kruh, 0 → prázdny. */
+export function TimerRing({ progress, size = 52, stroke = 3, children }) {
+  const r = (size - stroke) / 2 - 1;
+  const C = 2 * Math.PI * r;
+  return html`
+    <div class="timer-ring" style=${`width:${size}px;height:${size}px`}>
+      <svg class="timer-ring-svg" viewBox=${`0 0 ${size} ${size}`} width=${size} height=${size} aria-hidden="true">
+        <circle class="timer-ring-track" cx=${size / 2} cy=${size / 2} r=${r} style=${`stroke-width:${stroke}`} />
+        <circle class="timer-ring-value" cx=${size / 2} cy=${size / 2} r=${r}
+          style=${`stroke-width:${stroke};stroke-dasharray:${C};stroke-dashoffset:${C * (1 - Math.max(0, Math.min(1, progress)))}`} />
+      </svg>
+      ${children}
+    </div>`;
+}
+
+/**
+ * Časovač pauzy. modal: veľké okno uprostred obrazovky so stmaveným pozadím (počas tréningu);
+ * ťuknutím mimo okna sa zmenší do spodného panela. Inde (iné obrazovky) je vždy panel.
+ */
+export function RestTimer({ modal = false }) {
   const t = useRestTimer();
   const [now, setNow] = useState(Date.now());
 
@@ -119,37 +162,55 @@ export function RestTimer() {
 
   if (!t) return null;
   const progress = done ? 0 : Math.min(1, remainingMs / (t.total * 1000));
+  const time = formatClock(Math.ceil(Math.max(0, remainingMs) / 1000));
+  const big = modal && !t.minimized;
+
+  const buttons = html`
+    <button type="button" class="rest-btn" onClick=${() => adjustRest(-15)} aria-label="Ubrať 15 sekúnd">−15</button>
+    <button type="button" class="rest-btn" onClick=${() => adjustRest(15)} aria-label="Pridať 15 sekúnd">+15</button>
+    <button type="button" class="rest-btn skip" onClick=${dismissRest} aria-label="Preskočiť pauzu">${Icon.x(big ? 22 : 18)}</button>`;
+
+  if (big) {
+    return html`
+      <div class="rest-bar modal" role=${done ? 'status' : 'timer'} aria-label="Odpočinok"
+        onClick=${(e) => { if (e.target === e.currentTarget) setRestMinimized(true); }}>
+        <div class=${`rest-inner ${done ? 'done' : ''}`}>
+          <${TimerRing} progress=${progress} size=${232} stroke=${8}>
+            <div class="timer-ring-center">
+              ${done
+                ? html`<span class="rest-done-icon">${Icon.check(44)}</span><span class="rest-done-text">Pauza skončila</span>`
+                : html`<div class="rest-label">Pauza</div><div class="rest-time">${time}</div>`}
+            </div>
+          </${TimerRing}>
+          ${!done && html`<div class="rest-actions">${buttons}</div>`}
+          ${!done && html`
+            <button type="button" class="rest-minimize" onClick=${() => setRestMinimized(true)}>
+              ${Icon.chevronDown(18)}<span>Zmenšiť</span>
+            </button>`}
+        </div>
+      </div>`;
+  }
 
   if (done) {
     return html`
       <div class="rest-bar" role="status">
-        <button type="button" class="rest-inner done" onClick=${stopRest}>
+        <button type="button" class="rest-inner done" onClick=${dismissRest}>
           ${Icon.check(22)}<span class="rest-done-text">Pauza skončila</span>
         </button>
       </div>`;
   }
-  // Kruhový ukazovateľ zostávajúceho času okolo ikony stopiek (r = 22 → obvod ≈ 138,2).
-  const C = 2 * Math.PI * 22;
   return html`
     <div class="rest-bar" role="timer" aria-label="Odpočinok">
       <div class="rest-inner">
-        <div class="rest-ring" aria-hidden="true">
-          <svg class="rest-ring-svg" viewBox="0 0 52 52" width="52" height="52">
-            <circle class="rest-ring-track" cx="26" cy="26" r="22" />
-            <circle class="rest-ring-value" cx="26" cy="26" r="22"
-              style=${`stroke-dasharray:${C};stroke-dashoffset:${C * (1 - progress)}`} />
-          </svg>
-          ${Icon.timer(22)}
-        </div>
-        <div class="rest-main">
-          <div class="rest-label">Pauza</div>
-          <div class="rest-time">${formatClock(Math.ceil(remainingMs / 1000))}</div>
-        </div>
-        <div class="rest-actions">
-          <button type="button" class="rest-btn" onClick=${() => adjustRest(-15)} aria-label="Ubrať 15 sekúnd">−15</button>
-          <button type="button" class="rest-btn" onClick=${() => adjustRest(15)} aria-label="Pridať 15 sekúnd">+15</button>
-          <button type="button" class="rest-btn skip" onClick=${stopRest} aria-label="Preskočiť pauzu">${Icon.x(18)}</button>
-        </div>
+        <button type="button" class="rest-expand" aria-label=${modal ? 'Zväčšiť časovač' : 'Odpočinok'}
+          onClick=${() => modal && setRestMinimized(false)}>
+          <${TimerRing} progress=${progress}>${Icon.timer(22)}</${TimerRing}>
+          <div class="rest-main">
+            <div class="rest-label">Pauza</div>
+            <div class="rest-time">${time}</div>
+          </div>
+        </button>
+        <div class="rest-actions">${buttons}</div>
       </div>
     </div>`;
 }

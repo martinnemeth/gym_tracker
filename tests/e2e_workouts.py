@@ -286,7 +286,37 @@ try:
     click('[aria-label="Možnosti tréningu"]'); settle(0.3)
     click_text('.action-row', 'Zahodiť tréning'); settle(0.6)
 
-    errs = [c for c in b.console if c.startswith('EXC')]
+    # ── Pauza v okne, riadok na rade, stopky časovej série, poradie v histórii ──
+    wid2 = b.eval("""(async()=>{const P=await import('./src/db/plans.js'); const W=await import('./src/db/workouts.js'); const E=await import('./src/db/exercises.js');
+      const all=await E.listExercises(); const by=(id)=>all.find(e=>e.id===id);
+      const d=P.newDay('Poradie'); const pb=P.newPlanExercise(by('lib-bench-press')); pb.sets=2; pb.weight=50;
+      const pp=P.newPlanExercise(by('lib-plank')); pp.sets=1; pp.durationSec=2; d.exercises=[pb,pp];
+      const p=await P.savePlan({name:'Poradie',days:[d]}); return (await W.startWorkout(p,d.id)).id})()""")
+    b.goto(BASE + f'#/workout/{wid2}', 1); b.wait_for("document.querySelector('.we-card')")
+    check(b.eval("!!document.querySelector('.set-row.current')") and b.eval(f"{ROW.format(c=0, r=0)}.classList.contains('current')"),
+          'na začiatku je na rade prvá séria')
+    check(b.eval(f"!!{ROW.format(c=1, r=0)}.querySelector('.set-check.play')"), 'časový cvik: tlačidlo stopiek')
+    # plank ako prvý: stopky (5 s príprava + 2 s), séria sa zapíše sama
+    b.eval(f"{ROW.format(c=1, r=0)}.querySelector('.set-check.play').click()"); settle(0.4)
+    check(exists('.timer-modal') and 'Priprav sa' in b.eval("document.querySelector('.timer-modal').textContent"), 'stopky: prípravný odpočet')
+    b.wait_for(f"{ROW.format(c=1, r=0)}.classList.contains('done')", timeout=12)
+    check(not exists('.timer-modal') and exists('.rest-bar.modal'), 'stopky zapísali sériu a spustili pauzu v okne')
+    plank = [s for s in mod('db/workouts.js', f"m.getWorkoutSets('{wid2}')") if s['exerciseId'] == 'lib-plank']
+    check(len(plank) == 1 and plank[0]['durationSec'] == 2, f'stopky: zapísaný cieľový čas ({plank})')
+    b.eval("document.querySelector('.rest-bar.modal').dispatchEvent(new MouseEvent('click', {bubbles: true}))"); settle(0.3)
+    check(not exists('.rest-bar.modal') and exists('.rest-bar .rest-expand'), 'ťuknutie mimo okna zmenší pauzu do panela')
+    click('.rest-btn.skip'); settle(0.3)
+    check(b.eval("document.activeElement?.dataset.field") == 'weight'
+          and b.eval(f"{ROW.format(c=0, r=0)}.contains(document.activeElement)"), 'po zavretí pauzy je kurzor v riadku na rade')
+    row_type(0, 0, 'reps', '8'); row_check(0, 0); settle(0.4)
+    check(b.eval(f"{ROW.format(c=0, r=1)}.classList.contains('current')"), 'po zápise je na rade ďalšia séria')
+    click('.rest-btn.skip'); settle(0.2)
+    row_check(0, 1); settle(0.4); click('.rest-btn.skip'); settle(0.2)
+    confirm(True)
+    click_text('.workout-actions .btn', 'Dokončiť tréning'); settle(1)
+    check(texts('.summary-ex-name') == ['Plank', 'Tlak na rovnej lavičke'], f'história: cviky v poradí cvičenia ({texts(".summary-ex-name")})')
+
+    errs =[c for c in b.console if c.startswith('EXC')]
     check(not errs, f'žiadne JS výnimky {errs}')
     print(f'\n{ok} kontrol OK, screenshoty: {T}')
 finally:
