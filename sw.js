@@ -1,6 +1,6 @@
 // Service worker: precache všetkých súborov aplikácie, offline-first.
 // Pri pridaní nového súboru ho dopíš do ASSETS a zvýš VERSION (a APP_VERSION v src/config.js).
-const VERSION = '0.6.0';
+const VERSION = '0.7.0';
 const CACHE = `gymtracker-${VERSION}`;
 
 const ASSETS = [
@@ -10,6 +10,7 @@ const ASSETS = [
   'icons/icon-192.png',
   'icons/icon-512.png',
   'icons/apple-touch-icon.png',
+  'assets/hero-weights.webp',
   'vendor/preact-htm-3.1.1.js',
   'src/styles.css',
   'src/main.js',

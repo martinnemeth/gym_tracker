@@ -72,6 +72,20 @@ try:
     click('.sheet-backdrop'); settle(0.2)
     check(not exists('.sheet'), 'panel sa zavrie ťuknutím mimo')
 
+    # Potiahnutie panela nadol: krátky ťah ho vráti, dlhší zavrie
+    def drag(y0, y1, steps=8):
+        b.call("Input.dispatchTouchEvent", type='touchStart', touchPoints=[{"x": 195, "y": y0}])
+        for i in range(1, steps + 1):
+            b.call("Input.dispatchTouchEvent", type='touchMove', touchPoints=[{"x": 195, "y": y0 + (y1 - y0) * i / steps}])
+            time.sleep(0.03)
+        b.call("Input.dispatchTouchEvent", type='touchEnd', touchPoints=[]); settle(0.5)
+    click('[aria-label="Filter vybavenia"]'); settle(0.4)
+    grab = b.eval("document.querySelector('.sheet-grabber').getBoundingClientRect().top") + 2
+    drag(grab, grab + 40)
+    check(exists('.sheet'), 'krátke potiahnutie panel nezavrie')
+    drag(grab, grab + 260)
+    check(not exists('.sheet'), 'panel sa zavrie potiahnutím nadol')
+
     # ── Detail ──
     click_text('.ex-item-name', 'Tlak na rovnej lavičke'); settle(0.8)
     check(title() == 'Tlak na rovnej lavičke', 'otvorenie detailu zo zoznamu')

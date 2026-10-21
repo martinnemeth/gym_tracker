@@ -84,9 +84,11 @@ function PlanExerciseEditor({ pe, exercise, index, count, onChange, onMove, onRe
           ${exercise?.name || 'Neznámy cvik'}
           ${exercise?.deletedAt && html` <${Tag} kind="muted">zmazaný</${Tag}>`}
         </div>
-        <${IconButton} class="plain" icon=${Icon.up()} label="Posunúť hore" disabled=${index === 0} onClick=${() => onMove(-1)} />
-        <${IconButton} class="plain" icon=${Icon.down()} label="Posunúť dole" disabled=${index === count - 1} onClick=${() => onMove(1)} />
-        <${IconButton} class="plain danger" icon=${Icon.trash(18)} label="Odstrániť cvik" onClick=${onRemove} />
+        <div class="tile-actions">
+          <${IconButton} class="tile sm" icon=${Icon.up()} label="Posunúť hore" disabled=${index === 0} onClick=${() => onMove(-1)} />
+          <${IconButton} class="tile sm" icon=${Icon.down()} label="Posunúť dole" disabled=${index === count - 1} onClick=${() => onMove(1)} />
+          <${IconButton} class="tile sm danger" icon=${Icon.trash(18)} label="Odstrániť cvik" onClick=${onRemove} />
+        </div>
       </div>
       <div class="pe-fields">
         <${NumField} label="Série" value=${pe.sets} onInput=${set('sets')} />
@@ -199,13 +201,16 @@ export function PlanEditScreen({ params }) {
     <div class="screen">
       <${AppHeader} title=${title}
         left=${html`<${TextButton} onClick=${cancel}>Zrušiť</${TextButton}>`}
-        right=${html`<${TextButton} strong onClick=${save} disabled=${saving}>Uložiť</${TextButton}>`} />
+        right=${html`<${TextButton} pill onClick=${save} disabled=${saving}>Uložiť</${TextButton}>`} />
 
       <form class="form" onSubmit=${(e) => { e.preventDefault(); save(); }}>
         <label class="field">
           <span class="field-label">Názov plánu</span>
-          <input type="text" value=${form.name} placeholder="napr. Horná / dolná polovica" autocomplete="off"
-            onInput=${(e) => { const name = e.currentTarget.value; setForm((f) => ({ ...f, name })); }} />
+          <span class="input-icon">
+            ${Icon.edit(18)}
+            <input type="text" value=${form.name} placeholder="napr. Horná / dolná polovica" autocomplete="off"
+              onInput=${(e) => { const name = e.currentTarget.value; setForm((f) => ({ ...f, name })); }} />
+          </span>
           ${submitted && errors.name && html`<span class="field-error">${errors.name}</span>`}
         </label>
 
@@ -215,15 +220,17 @@ export function PlanEditScreen({ params }) {
           ${form.days.map((day, di) => html`
             <div class="card day-edit" key=${day.id}>
               <div class="day-edit-head">
-                <span class="step-badge">${di + 1}</span>
+                <span class="day-badge">${di + 1}</span>
                 <input type="text" class="day-name-input" value=${day.name} placeholder=${defaultDayName(di)}
                   aria-label="Názov dňa" autocomplete="off"
                   onInput=${(e) => { const name = e.currentTarget.value; updateDay(day.id, (d) => ({ ...d, name })); }} />
-                <${IconButton} class="plain" icon=${Icon.up()} label="Posunúť deň hore" disabled=${di === 0}
-                  onClick=${() => setDays((days) => move(days, di, -1))} />
-                <${IconButton} class="plain" icon=${Icon.down()} label="Posunúť deň dole" disabled=${di === form.days.length - 1}
-                  onClick=${() => setDays((days) => move(days, di, 1))} />
-                <${IconButton} class="plain danger" icon=${Icon.trash(18)} label="Odstrániť deň" onClick=${() => removeDay(day)} />
+                <div class="tile-actions">
+                  <${IconButton} class="tile" icon=${Icon.up()} label="Posunúť deň hore" disabled=${di === 0}
+                    onClick=${() => setDays((days) => move(days, di, -1))} />
+                  <${IconButton} class="tile" icon=${Icon.down()} label="Posunúť deň dole" disabled=${di === form.days.length - 1}
+                    onClick=${() => setDays((days) => move(days, di, 1))} />
+                  <${IconButton} class="tile danger" icon=${Icon.trash(18)} label="Odstrániť deň" onClick=${() => removeDay(day)} />
+                </div>
               </div>
               ${day.exercises.map((pe, pi) => html`
                 <${PlanExerciseEditor} key=${pe.id} pe=${pe} exercise=${state.exercises.get(pe.exerciseId)}
@@ -231,10 +238,10 @@ export function PlanEditScreen({ params }) {
                   onChange=${(next) => updateDay(day.id, (d) => ({ ...d, exercises: d.exercises.map((x) => (x.id === pe.id ? next : x)) }))}
                   onMove=${(delta) => updateDay(day.id, (d) => ({ ...d, exercises: move(d.exercises, pi, delta) }))}
                   onRemove=${() => updateDay(day.id, (d) => ({ ...d, exercises: d.exercises.filter((x) => x.id !== pe.id) }))} />`)}
-              <${AddRow} onClick=${() => setPickerDay(day.id)}>Pridať cvik</${AddRow}>
+              <${AddRow} circle onClick=${() => setPickerDay(day.id)}>Pridať cvik</${AddRow}>
             </div>`)}
           <div class="card group add-day">
-            <${AddRow} onClick=${() => setDays((days) => [...days, newDay(defaultDayName(days.length))])}>Pridať deň</${AddRow}>
+            <${AddRow} circle onClick=${() => setDays((days) => [...days, newDay(defaultDayName(days.length))])}>Pridať deň</${AddRow}>
           </div>
           <p class="section-footer">
             Krok: o koľko odporúčanie progresie zvýši váhu (pri časových cvikoch čas).
@@ -245,7 +252,7 @@ export function PlanEditScreen({ params }) {
         <div class="field">
           <span class="field-label">Upozornenie na stagnáciu</span>
           <div class="card stagnation-edit">
-            <div class="pe-fields">
+            <div class="pe-fields split">
               <${NumField} label="Tréningov" value=${form.stagnation.sessions}
                 onInput=${(v) => setForm((f) => ({ ...f, stagnation: { ...f.stagnation, sessions: v } }))} />
               <${NumField} label="Min. nárast %" decimal value=${form.stagnation.minGainPct}
@@ -253,7 +260,7 @@ export function PlanEditScreen({ params }) {
             </div>
           </div>
           <p class="section-footer">
-            Cvik stagnuje, ak za ${lastSessions(stagnationFromForm(form.stagnation).sessions)}
+            Cvik stagnuje, ak za ${lastSessions(stagnationFromForm(form.stagnation).sessions)}${' '}
             nevzrástol aspoň o ${form.stagnation.minGainPct || DEFAULT_STAGNATION.minGainPct} % (odhad 1RM, opakovania alebo čas).
           </p>
         </div>

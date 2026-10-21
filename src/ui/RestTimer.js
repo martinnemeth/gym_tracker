@@ -128,17 +128,28 @@ export function RestTimer() {
         </button>
       </div>`;
   }
+  // Kruhový ukazovateľ zostávajúceho času okolo ikony stopiek (r = 22 → obvod ≈ 138,2).
+  const C = 2 * Math.PI * 22;
   return html`
     <div class="rest-bar" role="timer" aria-label="Odpočinok">
       <div class="rest-inner">
+        <div class="rest-ring" aria-hidden="true">
+          <svg class="rest-ring-svg" viewBox="0 0 52 52" width="52" height="52">
+            <circle class="rest-ring-track" cx="26" cy="26" r="22" />
+            <circle class="rest-ring-value" cx="26" cy="26" r="22"
+              style=${`stroke-dasharray:${C};stroke-dashoffset:${C * (1 - progress)}`} />
+          </svg>
+          ${Icon.timer(22)}
+        </div>
         <div class="rest-main">
           <div class="rest-label">Pauza</div>
           <div class="rest-time">${formatClock(Math.ceil(remainingMs / 1000))}</div>
         </div>
-        <button type="button" class="rest-btn" onClick=${() => adjustRest(-15)} aria-label="Ubrať 15 sekúnd">−15</button>
-        <button type="button" class="rest-btn" onClick=${() => adjustRest(15)} aria-label="Pridať 15 sekúnd">+15</button>
-        <button type="button" class="rest-btn skip" onClick=${stopRest} aria-label="Preskočiť pauzu">${Icon.x(18)}</button>
-        <div class="rest-progress" style=${`transform: scaleX(${progress})`} />
+        <div class="rest-actions">
+          <button type="button" class="rest-btn" onClick=${() => adjustRest(-15)} aria-label="Ubrať 15 sekúnd">−15</button>
+          <button type="button" class="rest-btn" onClick=${() => adjustRest(15)} aria-label="Pridať 15 sekúnd">+15</button>
+          <button type="button" class="rest-btn skip" onClick=${stopRest} aria-label="Preskočiť pauzu">${Icon.x(18)}</button>
+        </div>
       </div>
     </div>`;
 }

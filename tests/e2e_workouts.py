@@ -65,7 +65,7 @@ try:
     check(hash_() == '#/plans/new' and exists('.day-edit'), 'CTA otvorí formulár nového plánu s prvým dňom')
     click_text('.text-btn', 'Uložiť'); settle(0.3)
     check(texts('.field-error') == ['Zadaj názov plánu.'], 'validácia názvu plánu')
-    type_into('.field > input', 'Test plán')
+    type_into('.field input', 'Test plán')
     type_into('.day-name-input', 'Push')
     click_text('.day-edit .add-row', 'Pridať cvik'); settle(0.4)
     check(exists('.sheet.tall .search'), 'otvorí sa výber cvikov')
@@ -253,7 +253,7 @@ try:
     b.goto(BASE + f'#/plans/{plan_id}/edit', 1); b.wait_for("document.querySelector('.day-edit')")
     b.eval("document.querySelectorAll('.day-edit')[1].querySelector('[aria-label=\"Posunúť deň hore\"]').click()"); settle(0.2)
     click_text('.text-btn', 'Uložiť'); settle(0.8)
-    check(texts('.day-card-title') == ['Deň B', 'Push'], 'presun dňa v pláne')
+    check(texts('.day-card-name') == ['Deň B', 'Push'], 'presun dňa v pláne')
     plan2 = mod('db/plans.js', f"m.getPlan('{plan_id}')")
     check(plan2['days'][1]['exercises'][0]['id'] == bench['id'], 'ID cvikov v pláne ostávajú po úprave stabilné')
 
@@ -276,7 +276,7 @@ try:
 
     # ── Voľný tréning ──
     b.goto(BASE + '#/plans', 1); b.wait_for("document.querySelector('.hero')")
-    click_text('.btn', 'Voľný tréning'); settle(0.8)
+    click_text('.free-workout', 'Voľný tréning'); settle(0.8)
     check(title() == 'Voľný tréning' and exists('.empty'), 'voľný tréning začína prázdny')
     click_text('.empty .btn', 'Pridať cvik'); settle(0.4)
     pick(['Kliky'])

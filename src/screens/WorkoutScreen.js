@@ -320,9 +320,9 @@ export function WorkoutScreen({ params }) {
 
   const headerRight = active
     ? html`
-      <button type="button" class="btn btn-primary btn-sm" onClick=${finish}>Dokončiť</button>
+      <button type="button" class="btn btn-primary btn-sm btn-finish" onClick=${finish}>${Icon.check(18)}<span>Dokončiť</span></button>
       <${IconButton} icon=${Icon.more()} label="Možnosti tréningu" onClick=${() => setMenu('workout')} />`
-    : html`<${TextButton} strong onClick=${doneEditing}>Hotovo</${TextButton}>`;
+    : html`<${TextButton} pill onClick=${doneEditing}>Hotovo</${TextButton}>`;
 
   return html`
     <div class="screen">
@@ -332,10 +332,10 @@ export function WorkoutScreen({ params }) {
         <h1 class="page-title">${workout.dayName}</h1>
         <div class="workout-meta">
           ${active
-            ? html`<span class="workout-clock">${Icon.clock(16)}${formatClock((now - workout.startedAt) / 1000)}</span>`
+            ? html`<span class="workout-clock">${Icon.timer(20)}${formatClock((now - workout.startedAt) / 1000)}</span>`
             : html`<span>${formatDateLong(workout.startedAt)}</span>`}
-          ${workout.planName && html`<span>${workout.planName}</span>`}
-          <span>${totals.done}/${totals.planned} sérií</span>
+          ${workout.planName && html`<span class="workout-plan">${workout.planName}</span>`}
+          <span class="workout-count"><b>${totals.done}/${totals.planned}</b> sérií</span>
         </div>
       </div>
 
@@ -394,13 +394,13 @@ export function WorkoutScreen({ params }) {
                     onClick=${() => toggleRow(we, i, defaults, logged)}>${Icon.check(18)}</button>
                 </div>`;
             })}
-            <button type="button" class="we-add-set" onClick=${() => addSet(we)}>${Icon.plus(16)}<span>Pridať sériu</span></button>
+            <button type="button" class="we-add-set" onClick=${() => addSet(we)}>${Icon.plus(18)}<span>Pridať sériu</span></button>
           </section>`;
       })}
 
       ${workout.exercises.length > 0 && html`
         <section class="section">
-          <div class="card group"><${AddRow} onClick=${() => setPickerOpen(true)}>Pridať cvik</${AddRow}></div>
+          <div class="card group"><${AddRow} class="center" onClick=${() => setPickerOpen(true)}>Pridať cvik</${AddRow}></div>
         </section>`}
 
       ${active && html`

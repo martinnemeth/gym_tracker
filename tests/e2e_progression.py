@@ -222,7 +222,7 @@ try:
     # Voľný tréning odporúčania nevytvára
     b.goto(BASE + '#/plans', 1); b.wait_for("document.querySelector('.plan-hero')")
     n = len(recs_db())
-    click_text('.btn', 'Voľný tréning'); settle(0.8)
+    click_text('.free-workout', 'Voľný tréning'); settle(0.8)
     click_text('.empty .btn', 'Pridať cvik'); settle(0.4)
     b.wait_for("document.querySelector('.sheet.tall .ex-item')")
     type_into('.sheet .search input', 'Kliky'); settle(0.3)

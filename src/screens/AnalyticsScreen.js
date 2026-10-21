@@ -107,7 +107,7 @@ export function PlanAnalyticsScreen({ params }) {
 
   if (workouts.length === 0) {
     return html`<div class="screen">${header}${head}
-      <${EmptyState} title="Zatiaľ žiadne tréningy"
+      <${EmptyState} icon=${Icon.barChart(24)} title="Zatiaľ žiadne tréningy"
         text="Grafy progresu sa zobrazia po prvom dokončenom tréningu tohto plánu." /></div>`;
   }
 
@@ -241,7 +241,7 @@ export function ExerciseAnalyticsScreen({ params }) {
 
   if (!sessions.length) {
     return html`<div class="screen">${header}${head}
-      <${EmptyState} title="Zatiaľ žiadne odcvičené série"
+      <${EmptyState} icon=${Icon.barChart(24)} title="Zatiaľ žiadne odcvičené série"
         text=${planId ? 'Cvik zatiaľ nebol odcvičený v tomto pláne.' : 'Graf sa zobrazí po prvom tréningu s týmto cvikom.'} /></div>`;
   }
 

@@ -59,8 +59,8 @@ export function PlanDetailScreen({ params }) {
       <div class="detail-head">
         <h1 class="page-title">${plan.name}</h1>
         <div class="tags">
-          ${active && html`<${Tag} kind="primary">Aktívny plán</${Tag}>`}
-          <${Tag} kind="muted">${plural(plan.days.length, 'deň', 'dni', 'dní')} · ${plural(exCount, 'cvik', 'cviky', 'cvikov')}</${Tag}>
+          ${active && html`<${Tag} kind="primary">${Icon.clock(18)}Aktívny plán</${Tag}>`}
+          <${Tag} kind="muted">${Icon.dumbbell(18)}${plural(plan.days.length, 'deň', 'dni', 'dní')} · ${plural(exCount, 'cvik', 'cviky', 'cvikov')}</${Tag}>
         </div>
       </div>
 
@@ -90,14 +90,14 @@ export function PlanDetailScreen({ params }) {
         const isNext = nextDay?.id === day.id;
         return html`
           <section class="section" key=${day.id}>
-            <div class=${`card day-card ${isNext ? 'next' : ''}`}>
+            <div class=${`card day-card ${isNext ? 'next highlight' : ''}`}>
               <div class="day-card-head">
                 <div class="day-card-titles">
-                  <h2 class="day-card-title">${day.name}</h2>
-                  <div class="day-card-meta">
+                  <h2 class="day-card-title">
+                    <span class="day-card-name">${day.name}</span>
                     ${isNext && html`<span class="next-badge">Na rade</span>`}
-                    ${plural(day.exercises.length, 'cvik', 'cviky', 'cvikov')}
-                  </div>
+                  </h2>
+                  <div class="day-card-meta">${plural(day.exercises.length, 'cvik', 'cviky', 'cvikov')}</div>
                 </div>
                 <${isNext ? PrimaryButton : SecondaryButton} icon=${Icon.play(16)}
                   onClick=${() => beginWorkout(plan, day.id)}>Začať</${isNext ? PrimaryButton : SecondaryButton}>

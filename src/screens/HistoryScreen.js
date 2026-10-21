@@ -42,7 +42,7 @@ export function HistoryScreen() {
     <div class="screen">
       <${AppHeader} large title="História" />
       ${workouts.length === 0 && html`
-        <${EmptyState} title="Zatiaľ žiadne tréningy"
+        <${EmptyState} icon=${Icon.clock()} title="Zatiaľ žiadne tréningy"
           text="Dokončené tréningy sa zobrazia tu."
           action=${html`<${PrimaryButton} icon=${Icon.play(18)} onClick=${() => navigate('/plans')}>Začať tréning</${PrimaryButton}>`} />`}
       ${months.map((m) => html`

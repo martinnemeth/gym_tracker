@@ -42,6 +42,7 @@ Pri vydaní novej verzie:
 ```
 index.html, manifest.webmanifest, sw.js   PWA vstup, manifest, service worker
 vendor/                                    Preact + htm (bez build kroku)
+assets/                                    lokálne obrázky (fotka v hero karte, WebP)
 src/
   config.js                                verzie aplikácie, DB a knižnice
   router.js                                hash router

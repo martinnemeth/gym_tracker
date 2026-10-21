@@ -72,7 +72,7 @@ export function ExercisesScreen() {
       ${loading && !data && html`<${Loading} />`}
       ${error && html`<${ErrorBox} error=${error} />`}
       ${data && filtered.length === 0 && html`
-        <${EmptyState} title="Nič sa nenašlo"
+        <${EmptyState} icon=${Icon.search(24)} title="Nič sa nenašlo"
           text=${query ? `Cvik „${query}“ nie je v knižnici.` : 'Pre zvolený filter nie sú žiadne cviky.'}
           action=${html`<${PrimaryButton} icon=${Icon.plus()} onClick=${() => navigate('/exercises/new')}>Vytvoriť nový cvik</${PrimaryButton}>`} />`}
 

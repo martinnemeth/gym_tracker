@@ -124,7 +124,7 @@ try:
     s = shared()
     check(s['name'].startswith('gymtracker-zaloha-') and s['name'].endswith('.json') and s['type'] == 'application/json', f'súbor zálohy ({s["name"]})')
     backup = json.loads(s['text'])
-    check(backup['app'] == 'gymtracker' and backup['format'] == 1 and backup['appVersion'] == '0.6.0', 'hlavička zálohy')
+    check(backup['app'] == 'gymtracker' and backup['format'] == 1 and backup['appVersion'] == '0.7.0', 'hlavička zálohy')
     st = backup['stores']
     check(len(st['workouts']) == 7 and len(st['sets']) == 25 and len(st['plans']) == 1 and len(st['exercises']) > 90, 'záloha obsahuje všetky store-y')
     check(not any(r['key'] in ('restTimer', 'lastBackupAt') for r in st['settings']), 'lokálne nastavenia (časovač) nie sú v zálohe')
@@ -239,7 +239,7 @@ try:
     b.goto(BASE + '?sw#/more', 1.5)
     b.wait_for("navigator.serviceWorker.controller || false", timeout=15)
     n = b.eval("caches.keys().then(k=>Promise.all(k.map(n=>caches.open(n).then(c=>c.keys().then(r=>[n,r.length])))))")
-    check(len(n) == 1 and n[0][0] == 'gymtracker-0.6.0' and n[0][1] > 40, f'precache novej verzie ({n})')
+    check(len(n) == 1 and n[0][0] == 'gymtracker-0.7.0' and n[0][1] > 40, f'precache novej verzie ({n})')
     b.call('Network.enable')
     b.call('Network.emulateNetworkConditions', offline=True, latency=0, downloadThroughput=-1, uploadThroughput=-1)
     b.goto(BASE + '?sw#/more/ai-export', 1.5)

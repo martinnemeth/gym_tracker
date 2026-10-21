@@ -1,4 +1,4 @@
-import { html, useState, useEffect } from '../lib.js';
+import { html, useState, useEffect, useRef } from '../lib.js';
 import { goBack, navigate, navigateRoot } from '../router.js';
 import { Icon, EquipmentIcon } from './icons.js';
 import { MUSCLE_GROUPS, EQUIPMENT } from '../data/taxonomy.js';
@@ -54,17 +54,18 @@ export function Toast() {
 
 // ── Tlačidlá ─────────────────────────────────────────────
 
-export function PrimaryButton({ children, icon, onClick, disabled, type = 'button', block }) {
+/** iconEnd: ikona za textom (napr. šípka pri hlavnom CTA). */
+export function PrimaryButton({ children, icon, iconEnd, onClick, disabled, type = 'button', block }) {
   return html`
     <button type=${type} class=${`btn btn-primary ${block ? 'btn-block' : ''}`} onClick=${onClick} disabled=${disabled}>
-      ${icon}<span>${children}</span>
+      ${icon}<span>${children}</span>${iconEnd}
     </button>`;
 }
 
-export function SecondaryButton({ children, icon, onClick, disabled, type = 'button', block }) {
+export function SecondaryButton({ children, icon, iconEnd, onClick, disabled, type = 'button', block }) {
   return html`
     <button type=${type} class=${`btn btn-secondary ${block ? 'btn-block' : ''}`} onClick=${onClick} disabled=${disabled}>
-      ${icon}<span>${children}</span>
+      ${icon}<span>${children}</span>${iconEnd}
     </button>`;
 }
 
@@ -76,9 +77,10 @@ export function IconButton({ icon, label, onClick, disabled, badge, class: cls =
     </button>`;
 }
 
-export function TextButton({ children, onClick, disabled, strong, danger }) {
+/** pill: limetková pilulka (hlavná akcia v lište, napr. Uložiť). */
+export function TextButton({ children, onClick, disabled, strong, danger, pill }) {
   return html`
-    <button type="button" class=${`text-btn ${strong ? 'strong' : ''} ${danger ? 'danger' : ''}`}
+    <button type="button" class=${`text-btn ${strong ? 'strong' : ''} ${danger ? 'danger' : ''} ${pill ? 'pill' : ''}`}
       onClick=${onClick} disabled=${disabled}>${children}</button>`;
 }
 
@@ -204,9 +206,12 @@ export function SettingsRow({ icon, title, subtitle, value, href, onClick, chevr
   return html`<div class=${`row ${disabled ? 'disabled' : ''}`} aria-disabled=${disabled ? 'true' : undefined}>${content}</div>`;
 }
 
-/** Tlačidlo-odkaz v štýle riadku: ikona + text v akcentovej farbe. */
-export function AddRow({ children, onClick }) {
-  return html`<button type="button" class="row add-row" onClick=${onClick}>${Icon.plus()}<span>${children}</span></button>`;
+/** Tlačidlo-odkaz v štýle riadku: ikona + text v akcentovej farbe. circle: plus v limetkovom krúžku. */
+export function AddRow({ children, onClick, circle, class: cls = '' }) {
+  return html`
+    <button type="button" class=${`row add-row ${cls}`} onClick=${onClick}>
+      ${circle ? html`<span class="add-plus">${Icon.plus()}</span>` : Icon.plus()}<span>${children}</span>
+    </button>`;
 }
 
 export function StatCard({ value, label, text }) {
@@ -227,7 +232,7 @@ export function ExerciseImage({ exercise, size = 'thumb', src }) {
   const iconFn = EquipmentIcon[exercise?.equipment] || EquipmentIcon.other;
   return html`
     <div class=${`ex-image ${size}`} aria-hidden="true">
-      ${src ? html`<img src=${src} alt="" loading="lazy" />` : iconFn(size === 'hero' ? 56 : 28)}
+      ${src ? html`<img src=${src} alt="" loading="lazy" />` : iconFn(size === 'hero' ? 56 : 26)}
     </div>`;
 }
 
@@ -257,8 +262,106 @@ export function ExerciseListItem({ exercise, href, right, onClick, selected }) {
 
 // ── Panely ───────────────────────────────────────────────
 
+/**
+ * Zatvorenie panela potiahnutím nadol (ako v iOS). Ťahať sa dá za hornú časť (úchyt, nadpis,
+ * vyhľadávanie), alebo kdekoľvek, keď je obsah panela odscrollovaný úplne hore.
+ */
+const SWIPE_CLOSE_PX = 110;
+const SWIPE_CLOSE_VELOCITY = 0.6; // px/ms
+function useSwipeToClose(ref, enabled, onClose) {
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  useEffect(() => {
+    const sheet = ref.current;
+    if (!enabled || !sheet) return undefined;
+    const backdrop = sheet.parentElement;
+    let start = null; // { x, y, t, scroller, dragging }
+    let dy = 0;
+
+    const scrollerOf = (el) => {
+      for (let n = el; n && n !== backdrop; n = n.parentElement) {
+        if (n.scrollHeight > n.clientHeight + 1 && /(auto|scroll)/.test(getComputedStyle(n).overflowY)) return n;
+      }
+      return null;
+    };
+    const setOffset = (px, animate) => {
+      sheet.style.transition = animate ? 'transform 0.22s cubic-bezier(0.2, 0.7, 0.2, 1)' : 'none';
+      sheet.style.transform = px ? `translateY(${px}px)` : '';
+      backdrop.style.transition = animate ? 'background-color 0.22s' : 'none';
+      backdrop.style.backgroundColor = px ? `rgba(5, 6, 8, ${Math.max(0, 0.62 * (1 - px / sheet.offsetHeight))})` : '';
+    };
+
+    const onStart = (e) => {
+      if (e.touches.length !== 1) return;
+      const t = e.touches[0];
+      const handle = e.target.closest('.sheet-grabber, .sheet-title, .picker-head');
+      start = { x: t.clientX, y: t.clientY, t: Date.now(), scroller: handle ? null : scrollerOf(e.target), dragging: false };
+      dy = 0;
+    };
+    const onMove = (e) => {
+      if (!start) return;
+      const t = e.touches[0];
+      const ddx = t.clientX - start.x;
+      const ddy = t.clientY - start.y;
+      if (!start.dragging) {
+        if (Math.abs(ddx) > Math.abs(ddy) && Math.abs(ddx) > 6) { start = null; return; } // vodorovné posúvanie (chipy)
+        if (ddy < 8) return;
+        if (start.scroller && start.scroller.scrollTop > 0) { start = null; return; }
+        start.dragging = true;
+        document.activeElement?.blur?.(); // schová klávesnicu
+      }
+      e.preventDefault();
+      dy = Math.max(0, ddy - 8);
+      setOffset(dy, false);
+    };
+    const onEnd = () => {
+      if (!start) return;
+      const { dragging, t } = start;
+      start = null;
+      if (!dragging) return;
+      const velocity = dy / Math.max(1, Date.now() - t);
+      if (dy > SWIPE_CLOSE_PX || velocity > SWIPE_CLOSE_VELOCITY) {
+        setOffset(sheet.offsetHeight, true);
+        setTimeout(() => closeRef.current(), 200);
+      } else {
+        setOffset(0, true);
+      }
+    };
+
+    sheet.addEventListener('touchstart', onStart, { passive: true });
+    sheet.addEventListener('touchmove', onMove, { passive: false });
+    sheet.addEventListener('touchend', onEnd);
+    sheet.addEventListener('touchcancel', onEnd);
+    return () => {
+      sheet.removeEventListener('touchstart', onStart);
+      sheet.removeEventListener('touchmove', onMove);
+      sheet.removeEventListener('touchend', onEnd);
+      sheet.removeEventListener('touchcancel', onEnd);
+    };
+  }, [enabled]);
+}
+
+/** Viditeľná časť okna (zmenšuje sa pri otvorenej klávesnici na iOS). */
+function useVisualViewport(enabled) {
+  const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+  const read = () => (vv ? { top: vv.offsetTop, height: vv.height } : null);
+  const [box, setBox] = useState(read);
+  useEffect(() => {
+    if (!enabled || !vv) return undefined;
+    const update = () => setBox(read());
+    update();
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => { vv.removeEventListener('resize', update); vv.removeEventListener('scroll', update); };
+  }, [enabled]);
+  return enabled ? box : null;
+}
+
 /** Spodný panel (filter, menu). Zatvorí sa ťuknutím mimo alebo Escape. tall: takmer na celú výšku. */
 export function BottomSheet({ open, title, onClose, children, footer, tall }) {
+  const viewport = useVisualViewport(open);
+  const sheetRef = useRef(null);
+  useSwipeToClose(sheetRef, open, onClose);
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e) => e.key === 'Escape' && onClose();
@@ -266,9 +369,11 @@ export function BottomSheet({ open, title, onClose, children, footer, tall }) {
     return () => removeEventListener('keydown', onKey);
   }, [open]);
   if (!open) return null;
+  // Pri otvorenej klávesnici (iOS) sa panel zmestí nad ňu: backdrop kopíruje viditeľnú časť okna.
+  const style = viewport ? `top:${viewport.top}px;height:${viewport.height}px;bottom:auto;--vvh:${viewport.height}px` : undefined;
   return html`
-    <div class="sheet-backdrop" onClick=${onClose}>
-      <div class=${`sheet ${tall ? 'tall' : ''}`} role="dialog" aria-modal="true" aria-label=${title} onClick=${(e) => e.stopPropagation()}>
+    <div class="sheet-backdrop" style=${style} onClick=${onClose}>
+      <div ref=${sheetRef} class=${`sheet ${tall ? 'tall' : ''}`} role="dialog" aria-modal="true" aria-label=${title} onClick=${(e) => e.stopPropagation()}>
         <div class="sheet-grabber" />
         ${title && html`<h2 class="sheet-title">${title}</h2>`}
         <div class="sheet-body">${children}</div>
@@ -295,9 +400,10 @@ export function ActionSheet({ open, title, actions, onClose }) {
 
 // ── Stavy ────────────────────────────────────────────────
 
-export function EmptyState({ title, text, action }) {
+export function EmptyState({ title, text, action, icon }) {
   return html`
     <div class="empty">
+      ${icon && html`<span class="icon-tile lg">${icon}</span>`}
       <div class="empty-title">${title}</div>
       ${text && html`<p>${text}</p>`}
       ${action}

@@ -10,24 +10,17 @@ import { countByIndex } from '../db/db.js';
 import { planAnalytics, DEFAULT_STAGNATION } from '../analytics.js';
 import { formatClock, formatAgo, plural } from '../format.js';
 import {
-  AppHeader, PrimaryButton, SecondaryButton, IconButton, Section, SettingsRow, Icon,
+  AppHeader, PrimaryButton, IconButton, Section, SettingsRow, Icon,
   Loading, ErrorBox, useAsync, useNow,
 } from '../ui/components.js';
 import { beginWorkout } from './WorkoutScreen.js';
 import { sortByOrder } from '../ui/Recommendations.js';
 
-// Dekoratívny kotúč — čisto grafický hero bez fotky (funguje offline, žiadne externé obrázky).
-const PlateGraphic = () => html`
-  <svg class="hero-graphic" viewBox="0 0 200 200" fill="none" aria-hidden="true">
-    <circle cx="100" cy="100" r="96" stroke="currentColor" stroke-width="8" />
-    <circle cx="100" cy="100" r="76" stroke="currentColor" stroke-width="3" />
-    <circle cx="100" cy="100" r="58" stroke="currentColor" stroke-width="3" />
-    <circle cx="100" cy="100" r="18" fill="currentColor" />
-    <text x="100" y="66" text-anchor="middle" fill="currentColor" font-size="20" font-weight="800"
-      font-family="-apple-system, system-ui, sans-serif">20</text>
-    <text x="100" y="148" text-anchor="middle" fill="currentColor" font-size="14" font-weight="700"
-      font-family="-apple-system, system-ui, sans-serif">KG</text>
-  </svg>`;
+// Dekoratívna fotka kotúčov (lokálny súbor, precache v sw.js). Má pevný rozmer, takže nespôsobí
+// posun rozloženia; ak sa nenačíta, skryje sa a karta ostane s gradientom.
+const HeroImage = () => html`
+  <img class="hero-graphic" src="assets/hero-weights.webp" alt="" width="640" height="640" decoding="async"
+    aria-hidden="true" onError=${(e) => { e.currentTarget.style.display = 'none'; }} />`;
 
 // Pripomienka zálohy, ak posledná je staršia ako 14 dní (alebo žiadna a už existujú tréningy).
 const BACKUP_REMIND_MS = 14 * 86400000;
@@ -52,29 +45,36 @@ function ResumeCard({ workout }) {
 function EmptyPlans() {
   return html`
     <section class="hero">
-      <${PlateGraphic} />
-      <h2 class="hero-title">Tvoj tréning<br />začína tu.</h2>
+      <${HeroImage} />
+      <h2 class="hero-title">Tvoj tréning<br /><span class="accent">začína tu.</span></h2>
       <p class="hero-text">Vytvor si prvý tréningový plán a začni sledovať progres.</p>
-      <${PrimaryButton} block icon=${Icon.plus()} onClick=${() => navigate('/plans/new')}>Vytvoriť plán</${PrimaryButton}>
+      <${PrimaryButton} block icon=${Icon.plus()} iconEnd=${Icon.chevronRight()} onClick=${() => navigate('/plans/new')}>Vytvoriť plán</${PrimaryButton}>
     </section>
 
     <section class="section">
       <div class="card features">
-        <div class="feature">${Icon.calendar()}<span>Plány<br />tréningov</span></div>
+        <div class="feature">
+          <span class="icon-tile lg">${Icon.calendar()}</span>
+          <span class="feature-text"><b>Plány</b>tréningov</span>
+        </div>
         <a class="feature" href="#/history"
           onClick=${(e) => { e.preventDefault(); navigateRoot('/history'); }}>
-          ${Icon.barChart(24)}<span>História<br />tréningov</span>
+          <span class="icon-tile lg">${Icon.barChart(24)}</span>
+          <span class="feature-text"><b>História</b>tréningov</span>
+          <span class="feature-chevron">${Icon.chevronRight(16)}</span>
         </a>
         <a class="feature" href="#/exercises"
           onClick=${(e) => { e.preventDefault(); navigateRoot('/exercises'); }}>
-          ${Icon.book(24)}<span>Knižnica<br />cvikov</span>
+          <span class="icon-tile lg">${Icon.book(24)}</span>
+          <span class="feature-text"><b>Knižnica</b>cvikov</span>
+          <span class="feature-chevron">${Icon.chevronRight(16)}</span>
         </a>
       </div>
     </section>
 
     <section class="section">
       <div class="card tip">
-        ${Icon.bulb()}
+        <span class="icon-tile lg round">${Icon.bulb()}</span>
         <div>
           <div class="tip-label">TIP</div>
           <p class="tip-text">Plány ti pomôžu mať tréningy konzistentné a sledovať progres v čase.</p>
@@ -88,7 +88,7 @@ function ActivePlanCard({ plan, nextDay, exercises }) {
   const names = nextDay?.exercises.map((pe) => exercises.get(pe.exerciseId)?.name).filter(Boolean) || [];
   return html`
     <section class="hero plan-hero">
-      <${PlateGraphic} />
+      <${HeroImage} />
       <div class="hero-caption">Aktívny plán</div>
       <a class="plan-hero-name" href=${`#/plans/${plan.id}`}
         onClick=${(e) => { e.preventDefault(); navigate(`/plans/${plan.id}`); }}>
@@ -103,7 +103,7 @@ function ActivePlanCard({ plan, nextDay, exercises }) {
               ${names.length ? names.join(' · ') : 'Deň zatiaľ nemá cviky.'}
             </p>
           </div>
-          <${PrimaryButton} block icon=${Icon.play(18)} onClick=${() => beginWorkout(plan, nextDay.id)}>
+          <${PrimaryButton} block icon=${Icon.play(18)} iconEnd=${Icon.chevronRight()} onClick=${() => beginWorkout(plan, nextDay.id)}>
             Začať ${nextDay.name}
           </${PrimaryButton}>`
         : html`
@@ -181,7 +181,11 @@ export function PlansScreen() {
 
       ${!activeWorkout && html`
         <section class="section">
-          <${SecondaryButton} block icon=${Icon.timer()} onClick=${() => beginWorkout(null, null)}>Voľný tréning</${SecondaryButton}>
+          <button type="button" class="card free-workout" onClick=${() => beginWorkout(null, null)}>
+            <span class="free-workout-icon">${Icon.timer(26)}</span>
+            <span class="free-workout-title">Voľný tréning</span>
+            <span class="row-chevron">${Icon.chevronRight(20)}</span>
+          </button>
           <p class="section-footer center">Tréning bez plánu — cviky pridáš počas cvičenia.</p>
         </section>`}
     </div>`;

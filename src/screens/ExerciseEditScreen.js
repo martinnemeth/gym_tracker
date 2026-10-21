@@ -131,7 +131,7 @@ export function ExerciseEditScreen({ params }) {
     <div class="screen">
       <${AppHeader} title=${title}
         left=${html`<${TextButton} onClick=${cancel}>Zrušiť</${TextButton}>`}
-        right=${html`<${TextButton} strong onClick=${save} disabled=${saving}>Uložiť</${TextButton}>`} />
+        right=${html`<${TextButton} pill onClick=${save} disabled=${saving}>Uložiť</${TextButton}>`} />
 
       <form class="form" onSubmit=${(e) => { e.preventDefault(); save(); }}>
         <label class="field">
