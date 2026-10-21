@@ -1,6 +1,6 @@
 // Service worker: precache všetkých súborov aplikácie, offline-first.
 // Pri pridaní nového súboru ho dopíš do ASSETS a zvýš VERSION (a APP_VERSION v src/config.js).
-const VERSION = '0.4.0';
+const VERSION = '0.5.0';
 const CACHE = `gymtracker-${VERSION}`;
 
 const ASSETS = [
@@ -19,12 +19,14 @@ const ASSETS = [
   'src/util.js',
   'src/format.js',
   'src/progression.js',
+  'src/analytics.js',
   'src/db/db.js',
   'src/db/exercises.js',
   'src/db/seed.js',
   'src/db/plans.js',
   'src/db/workouts.js',
   'src/db/recommendations.js',
+  'src/db/analytics.js',
   'src/data/exercise-library.js',
   'src/data/taxonomy.js',
   'src/ui/components.js',
@@ -32,12 +34,14 @@ const ASSETS = [
   'src/ui/ExercisePicker.js',
   'src/ui/RestTimer.js',
   'src/ui/Recommendations.js',
+  'src/ui/charts.js',
   'src/screens/App.js',
   'src/screens/PlansScreen.js',
   'src/screens/PlanDetailScreen.js',
   'src/screens/PlanEditScreen.js',
   'src/screens/WorkoutScreen.js',
   'src/screens/HistoryScreen.js',
+  'src/screens/AnalyticsScreen.js',
   'src/screens/ExercisesScreen.js',
   'src/screens/ExerciseDetailScreen.js',
   'src/screens/ExerciseEditScreen.js',

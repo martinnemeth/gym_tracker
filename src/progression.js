@@ -35,6 +35,13 @@ export function incrementOf(pe, exercise) {
 }
 
 const round2 = (n) => Math.round(n * 100) / 100;
+
+/** Váha po deloade: ~−10 %, zaokrúhlené na krok, aspoň o jeden krok nižšie. null, ak by vyšla ≤ 0. */
+export function deloadWeight(w, step) {
+  let next = round2(Math.round((w * DELOAD) / step) * step);
+  if (next > w - step) next = round2(w - step);
+  return next > 0 ? next : null;
+}
 const minWeight = (sets) => Math.min(...sets.map((s) => s.weight || 0));
 
 /** Sedenie, v ktorom väčšina sérií nedosiahla spodnú hranicu opakovaní. */
@@ -93,9 +100,8 @@ export function evaluate({ target, type, step, sets, prevSets = [] }) {
 
   // Deload: dva tréningy po sebe pod spodnou hranicou pri rovnakej alebo vyššej váhe.
   if (w > 0 && failed(sets, repMin) && failed(prevSets, repMin) && minWeight(prevSets) >= w) {
-    let next = round2(Math.round((w * DELOAD) / step) * step);
-    if (next > w - step) next = round2(w - step);
-    if (next <= 0) return null;
+    const next = deloadWeight(w, step);
+    if (next === null) return null;
     return {
       kind: 'deload',
       from: { ...base, weight: w },

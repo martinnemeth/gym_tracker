@@ -1,6 +1,9 @@
 import { html, useState } from '../lib.js';
 import { getExercise, exerciseUsage, deleteExercise, undeleteExercise } from '../db/exercises.js';
 import { recentPerformances } from '../db/workouts.js';
+import { exerciseSessions } from '../db/analytics.js';
+import { exerciseAnalytics, formatMetric } from '../analytics.js';
+import { Sparkline } from '../ui/charts.js';
 import { formatDate, setLabel } from '../format.js';
 import { MUSCLE_GROUPS, EQUIPMENT, TRACKING_TYPES } from '../data/taxonomy.js';
 import { navigate, goBack } from '../router.js';
@@ -16,8 +19,10 @@ export function ExerciseDetailScreen({ params }) {
   const { data, loading, error, reload } = useAsync(async () => {
     const ex = await getExercise(params.id);
     if (!ex) return null;
-    const [usage, recent] = await Promise.all([exerciseUsage(ex.id), recentPerformances(ex.id, { limit: 5 })]);
-    return { ex, usage, recent };
+    const [usage, recent, sessions] = await Promise.all([
+      exerciseUsage(ex.id), recentPerformances(ex.id, { limit: 5 }), exerciseSessions(ex.id),
+    ]);
+    return { ex, usage, recent, analytics: sessions.length ? exerciseAnalytics(sessions, ex.trackingType) : null };
   }, [params.id]);
   const [checked, setChecked] = useState(() => new Set());
   const [collapsed, setCollapsed] = useState(techniqueCollapsed);
@@ -31,7 +36,7 @@ export function ExerciseDetailScreen({ params }) {
       <${EmptyState} title="Cvik neexistuje" text="Mohol byť natrvalo zmazaný." /></div>`;
   }
 
-  const { ex, usage, recent } = data;
+  const { ex, usage, recent, analytics } = data;
   const toggleStep = (id) => setChecked((prev) => {
     const next = new Set(prev);
     next.has(id) ? next.delete(id) : next.add(id);
@@ -102,13 +107,22 @@ export function ExerciseDetailScreen({ params }) {
           <p class="notes-text">${ex.notes}</p>
         </${SectionCard}>`}
 
-      <${SectionCard} title="Použitie a štatistiky" icon=${Icon.barChart()}
-        footer="Grafy progresu, rekordy a odhad 1RM pribudnú s analytikou.">
+      <${SectionCard} title="Použitie a štatistiky" icon=${Icon.barChart()}>
         <div class="stats">
           <${StatCard} value=${usage.setCount} label="Odcvičené série" />
           <${StatCard} value=${usage.planNames.length || '–'} label="V plánoch" />
           <${StatCard} text value=${ex.aliases?.length ? ex.aliases.join(', ') : '–'} label="Iné názvy" />
         </div>
+        ${analytics && html`
+          <a class="an-link" href=${`#/exercises/${ex.id}/analytics`}
+            onClick=${(e) => { e.preventDefault(); navigate(`/exercises/${ex.id}/analytics`); }}>
+            <div class="row-main">
+              <div class="row-title">Progres a rekordy</div>
+              <div class="row-subtitle">${analytics.metric.label}: ${formatMetric(analytics.current, analytics.metric)}</div>
+            </div>
+            <${Sparkline} points=${analytics.all.slice(-12)} />
+            <span class="row-chevron">${Icon.chevronRight()}</span>
+          </a>`}
       </${SectionCard}>
 
       ${recent.length > 0 && html`

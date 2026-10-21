@@ -2,6 +2,8 @@ import { html, useState } from '../lib.js';
 import { listFinishedWorkouts, getWorkout, getWorkoutSets, deleteWorkout } from '../db/workouts.js';
 import { listExercises } from '../db/exercises.js';
 import { listForWorkout } from '../db/recommendations.js';
+import { exerciseSessions } from '../db/analytics.js';
+import { sessionRecord, formatMetric } from '../analytics.js';
 import { navigate, goBack } from '../router.js';
 import {
   formatDuration, formatMonth, formatWeekday, formatDateLong, formatTime, formatNum, setLabel, setsVolume, plural,
@@ -78,7 +80,15 @@ export function WorkoutSummaryScreen({ params }) {
     const workout = await getWorkout(params.id);
     if (!workout) return null;
     const [sets, exercises, recs] = await Promise.all([getWorkoutSets(workout.id), exerciseMap(), listForWorkout(workout.id)]);
-    return { workout, sets, exercises, recs: sortByOrder(recs, workout.exercises.map((we) => we.planExerciseId)) };
+    // Nové osobné rekordy: metrika cviku v tomto tréningu prekonala všetky predchádzajúce.
+    const records = new Map();
+    if (workout.status === 'done') {
+      for (const exId of new Set(sets.map((s) => s.exerciseId))) {
+        const rec = sessionRecord(await exerciseSessions(exId), workout.id, exercises.get(exId)?.trackingType || 'weight_reps');
+        if (rec) records.set(exId, rec);
+      }
+    }
+    return { workout, sets, exercises, records, recs: sortByOrder(recs, workout.exercises.map((we) => we.planExerciseId)) };
   }, [params.id]);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -87,7 +97,7 @@ export function WorkoutSummaryScreen({ params }) {
   if (error) return html`<div class="screen">${header()}<${ErrorBox} error=${error} /></div>`;
   if (!data) return html`<div class="screen">${header()}<${EmptyState} title="Tréning neexistuje" /></div>`;
 
-  const { workout, sets, exercises, recs } = data;
+  const { workout, sets, exercises, recs, records } = data;
   if (workout.status === 'active') {
     return html`<div class="screen">${header()}
       <${EmptyState} title="Tréning ešte prebieha"
@@ -127,6 +137,8 @@ export function WorkoutSummaryScreen({ params }) {
             <${StatCard} value=${volume > 0 ? volumeLabel(volume) : '–'} label="Objem" />
           </div>
         </div>
+        ${records.size > 0 && html`
+          <p class="section-footer pr-summary">${Icon.trophy(16)}<span>Nové rekordy: ${records.size}</span></p>`}
       </section>
 
       ${recs.length > 0 && html`
@@ -136,6 +148,7 @@ export function WorkoutSummaryScreen({ params }) {
       ${blocks.length === 0 && html`<${EmptyState} title="Žiadne zapísané série" />`}
       ${blocks.map(({ we, sets: list }) => {
         const ex = exercises.get(we.exerciseId);
+        const pr = records.get(we.exerciseId);
         return html`
           <section class="section" key=${we.id}>
             <div class="card summary-ex">
@@ -143,6 +156,8 @@ export function WorkoutSummaryScreen({ params }) {
                 onClick=${(e) => { e.preventDefault(); navigate(`/exercises/${we.exerciseId}`); }}>
                 ${ex?.name || 'Neznámy cvik'}
               </a>
+              ${pr && html`
+                <div class="pr-badge">${Icon.trophy(14)}<span>Nový rekord · ${pr.metric.label} ${formatMetric(pr.value, pr.metric)}</span></div>`}
               <ol class="summary-sets">
                 ${list.map((s) => html`
                   <li key=${s.id}><span class="set-idx">${s.setIndex + 1}</span><span>${setLabel(s, ex?.trackingType)}</span></li>`)}

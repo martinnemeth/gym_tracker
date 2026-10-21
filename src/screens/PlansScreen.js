@@ -4,6 +4,8 @@ import { listPlans } from '../db/plans.js';
 import { getActiveWorkout, nextDayOf } from '../db/workouts.js';
 import { listExercises } from '../db/exercises.js';
 import { listPending } from '../db/recommendations.js';
+import { planWorkouts } from '../db/analytics.js';
+import { planAnalytics, DEFAULT_STAGNATION } from '../analytics.js';
 import { formatClock, plural } from '../format.js';
 import {
   AppHeader, PrimaryButton, SecondaryButton, IconButton, Section, SettingsRow, Icon,
@@ -113,7 +115,15 @@ export function PlansScreen() {
       ? await Promise.all([nextDayOf(activePlan), listPending(activePlan.id)]) : [null, []];
     const exercises = new Map((await listExercises({ includeDeleted: true })).map((e) => [e.id, e]));
     const order = activePlan ? activePlan.days.flatMap((d) => d.exercises.map((pe) => pe.id)) : [];
-    return { plans, activeWorkout, activePlan, nextDay, exercises, pending: sortByOrder(pending, order) };
+    const alerts = activePlan
+      ? planAnalytics({
+        workouts: await planWorkouts(activePlan.id),
+        exercises,
+        order: activePlan.days.flatMap((d) => d.exercises.map((pe) => pe.exerciseId)),
+        stagnation: { ...DEFAULT_STAGNATION, ...activePlan.stagnation },
+      }).alerts
+      : [];
+    return { plans, activeWorkout, activePlan, nextDay, exercises, pending: sortByOrder(pending, order), alerts };
   });
 
   const addButton = html`<${IconButton} icon=${Icon.plus()} label="Nový plán" onClick=${() => navigate('/plans/new')} />`;
@@ -121,7 +131,7 @@ export function PlansScreen() {
   if (loading && !data) return html`<div class="screen"><${AppHeader} large title="Plány" /><${Loading} /></div>`;
   if (error) return html`<div class="screen"><${AppHeader} large title="Plány" /><${ErrorBox} error=${error} /></div>`;
 
-  const { plans, activeWorkout, activePlan, nextDay, exercises, pending } = data;
+  const { plans, activeWorkout, activePlan, nextDay, exercises, pending, alerts } = data;
 
   return html`
     <div class="screen">
@@ -133,11 +143,16 @@ export function PlansScreen() {
 
       ${activePlan && html`<${ActivePlanCard} plan=${activePlan} nextDay=${nextDay} exercises=${exercises} />`}
 
-      ${pending.length > 0 && html`
+      ${(pending.length > 0 || alerts.length > 0) && html`
         <${Section}>
-          <${SettingsRow} icon=${Icon.trendUp(20)} title="Odporúčania progresie"
-            subtitle=${pending.map((r) => exercises.get(r.exerciseId)?.name).filter(Boolean).join(' · ')}
-            value=${pending.length} href=${`#/plans/${activePlan.id}`} chevron />
+          ${pending.length > 0 && html`
+            <${SettingsRow} icon=${Icon.trendUp(20)} title="Odporúčania progresie"
+              subtitle=${pending.map((r) => exercises.get(r.exerciseId)?.name).filter(Boolean).join(' · ')}
+              value=${pending.length} href=${`#/plans/${activePlan.id}`} chevron />`}
+          ${alerts.length > 0 && html`
+            <${SettingsRow} icon=${html`<span class="warn-icon">${Icon.flat(20)}</span>`} title="Stagnácia"
+              subtitle=${alerts.map((r) => exercises.get(r.exerciseId)?.name).filter(Boolean).join(' · ')}
+              value=${alerts.length} href=${`#/plans/${activePlan.id}/analytics`} chevron />`}
         </${Section}>`}
 
       ${plans.length > 0 && html`

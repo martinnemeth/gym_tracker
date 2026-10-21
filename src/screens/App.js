@@ -7,6 +7,7 @@ import { PlansScreen } from './PlansScreen.js';
 import { PlanDetailScreen } from './PlanDetailScreen.js';
 import { PlanEditScreen } from './PlanEditScreen.js';
 import { WorkoutScreen } from './WorkoutScreen.js';
+import { PlanAnalyticsScreen, ExerciseAnalyticsScreen } from './AnalyticsScreen.js';
 import { HistoryScreen, WorkoutSummaryScreen } from './HistoryScreen.js';
 import { RestTimer, loadRestTimer, useRestTimer } from '../ui/RestTimer.js';
 import { ExercisesScreen, DeletedExercisesScreen } from './ExercisesScreen.js';
@@ -19,6 +20,8 @@ const ROUTES = [
   ['/plans', PlansScreen, true],
   ['/plans/new', PlanEditScreen],
   ['/plans/:id/edit', PlanEditScreen],
+  ['/plans/:id/analytics', PlanAnalyticsScreen],
+  ['/plans/:id/analytics/:exerciseId', ExerciseAnalyticsScreen],
   ['/plans/:id', PlanDetailScreen],
   ['/workout/:id', WorkoutScreen],
   ['/history', HistoryScreen, true],
@@ -26,6 +29,7 @@ const ROUTES = [
   ['/exercises', ExercisesScreen, true],
   ['/exercises/new', ExerciseEditScreen],
   ['/exercises/:id/edit', ExerciseEditScreen],
+  ['/exercises/:id/analytics', ExerciseAnalyticsScreen],
   ['/exercises/:id', ExerciseDetailScreen],
   ['/more', MoreScreen, true],
   ['/more/deleted-exercises', DeletedExercisesScreen],

@@ -3,6 +3,7 @@ import { getPlan, savePlan, newDay, newPlanExercise, defaultDayName, DEFAULT_RES
 import { listExercises } from '../db/exercises.js';
 import { supersedePending, TARGET_FIELDS } from '../db/recommendations.js';
 import { incrementOf } from '../progression.js';
+import { DEFAULT_STAGNATION, lastSessions } from '../analytics.js';
 import { navigate, goBack } from '../router.js';
 import { parseNum, formatNum } from '../format.js';
 import { AppHeader, IconButton, TextButton, AddRow, Tag, Icon, Loading, ErrorBox, EmptyState, showToast } from '../ui/components.js';
@@ -37,9 +38,24 @@ function peFromForm(pe) {
 
 const targetChanged = (a, b) => !a || TARGET_FIELDS.some((k) => (a[k] ?? null) !== (b[k] ?? null));
 
+const stagnationToForm = (st = {}) => {
+  const { sessions, minGainPct } = { ...DEFAULT_STAGNATION, ...st };
+  return { sessions: formatNum(sessions), minGainPct: formatNum(minGainPct) };
+};
+
+function stagnationFromForm(f) {
+  const n = parseNum(f.sessions);
+  const pct = parseNum(f.minGainPct);
+  return {
+    sessions: n !== null ? Math.min(20, Math.max(2, Math.round(n))) : DEFAULT_STAGNATION.sessions,
+    minGainPct: pct !== null && pct >= 0 ? pct : DEFAULT_STAGNATION.minGainPct,
+  };
+}
+
 const toForm = (plan) => ({
   name: plan.name,
   days: plan.days.map((d) => ({ ...d, exercises: d.exercises.map(peToForm) })),
+  stagnation: stagnationToForm(plan.stagnation),
 });
 
 function move(list, index, delta) {
@@ -109,7 +125,7 @@ export function PlanEditScreen({ params }) {
     (async () => {
       const all = await listExercises({ includeDeleted: true });
       const exercises = new Map(all.map((e) => [e.id, e]));
-      if (isNew) return { initial: { name: '', days: [newDay(defaultDayName(0))] }, exercises };
+      if (isNew) return { initial: { name: '', days: [newDay(defaultDayName(0))], stagnation: stagnationToForm() }, exercises };
       const plan = await getPlan(params.id);
       return { initial: plan && !plan.deletedAt ? toForm(plan) : null, exercises };
     })().then(
@@ -168,7 +184,7 @@ export function PlanEditScreen({ params }) {
           return { ...next, targetUpdatedAt: now };
         }),
       }));
-      const saved = await savePlan({ id: params.id, name: form.name, days });
+      const saved = await savePlan({ id: params.id, name: form.name, days, stagnation: stagnationFromForm(form.stagnation) });
       await supersedePending(changed);
       showToast(isNew ? 'Plán vytvorený' : 'Uložené');
       if (isNew) navigate(`/plans/${saved.id}`, { replace: true });
@@ -223,6 +239,22 @@ export function PlanEditScreen({ params }) {
           <p class="section-footer">
             Krok: o koľko odporúčanie progresie zvýši váhu (pri časových cvikoch čas).
             Prázdne = podľa vybavenia, 0 = bez odporúčaní.
+          </p>
+        </div>
+
+        <div class="field">
+          <span class="field-label">Upozornenie na stagnáciu</span>
+          <div class="card stagnation-edit">
+            <div class="pe-fields">
+              <${NumField} label="Tréningov" value=${form.stagnation.sessions}
+                onInput=${(v) => setForm((f) => ({ ...f, stagnation: { ...f.stagnation, sessions: v } }))} />
+              <${NumField} label="Min. nárast %" decimal value=${form.stagnation.minGainPct}
+                onInput=${(v) => setForm((f) => ({ ...f, stagnation: { ...f.stagnation, minGainPct: v } }))} />
+            </div>
+          </div>
+          <p class="section-footer">
+            Cvik stagnuje, ak za ${lastSessions(stagnationFromForm(form.stagnation).sessions)}
+            nevzrástol aspoň o ${form.stagnation.minGainPct || DEFAULT_STAGNATION.minGainPct} % (odhad 1RM, opakovania alebo čas).
           </p>
         </div>
       </form>

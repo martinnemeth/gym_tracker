@@ -3,10 +3,12 @@ import { getPlan, setActivePlan, deletePlan } from '../db/plans.js';
 import { nextDayOf } from '../db/workouts.js';
 import { listExercises } from '../db/exercises.js';
 import { listPending } from '../db/recommendations.js';
+import { planWorkouts } from '../db/analytics.js';
+import { planAnalytics, DEFAULT_STAGNATION } from '../analytics.js';
 import { navigate, goBack } from '../router.js';
 import { targetLabel, plural } from '../format.js';
 import {
-  AppHeader, IconButton, ActionSheet, PrimaryButton, SecondaryButton, Tag,
+  AppHeader, IconButton, ActionSheet, PrimaryButton, SecondaryButton, Tag, Section, SettingsRow,
   Loading, ErrorBox, EmptyState, Icon, useAsync, showToast,
 } from '../ui/components.js';
 import { RecommendationsCard, sortByOrder } from '../ui/Recommendations.js';
@@ -17,9 +19,13 @@ export function PlanDetailScreen({ params }) {
     const plan = await getPlan(params.id);
     if (!plan || plan.deletedAt) return null;
     const exercises = new Map((await listExercises({ includeDeleted: true })).map((e) => [e.id, e]));
-    const [nextDay, recs] = await Promise.all([nextDayOf(plan), listPending(plan.id)]);
+    const [nextDay, recs, workouts] = await Promise.all([nextDayOf(plan), listPending(plan.id), planWorkouts(plan.id)]);
     const order = plan.days.flatMap((d) => d.exercises.map((pe) => pe.id));
-    return { plan, exercises, nextDay, recs: sortByOrder(recs, order) };
+    const { alerts } = planAnalytics({
+      workouts, exercises, order: plan.days.flatMap((d) => d.exercises.map((pe) => pe.exerciseId)),
+      stagnation: { ...DEFAULT_STAGNATION, ...plan.stagnation },
+    });
+    return { plan, exercises, nextDay, recs: sortByOrder(recs, order), workoutCount: workouts.length, alerts };
   }, [params.id]);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -28,7 +34,7 @@ export function PlanDetailScreen({ params }) {
   if (error) return html`<div class="screen">${header()}<${ErrorBox} error=${error} /></div>`;
   if (!data) return html`<div class="screen">${header()}<${EmptyState} title="Plán neexistuje" /></div>`;
 
-  const { plan, exercises, nextDay, recs } = data;
+  const { plan, exercises, nextDay, recs, workoutCount, alerts } = data;
   const active = plan.status === 'active';
   const exCount = plan.days.reduce((n, d) => n + d.exercises.length, 0);
 
@@ -62,6 +68,16 @@ export function PlanDetailScreen({ params }) {
         <div class="section">
           <${SecondaryButton} block icon=${Icon.check()} onClick=${makeActive}>Nastaviť ako aktívny</${SecondaryButton}>
         </div>`}
+
+      ${workoutCount > 0 && html`
+        <${Section}>
+          <${SettingsRow} icon=${alerts.length ? html`<span class="warn-icon">${Icon.flat(20)}</span>` : Icon.barChart()}
+            title="Analytika"
+            subtitle=${alerts.length
+              ? `Stagnácia: ${alerts.map((r) => exercises.get(r.exerciseId)?.name).filter(Boolean).join(' · ')}`
+              : 'Grafy progresu, nárast sily, rekordy'}
+            value=${alerts.length || undefined} href=${`#/plans/${plan.id}/analytics`} chevron />
+        </${Section}>`}
 
       ${recs.length > 0 && html`
         <${RecommendationsCard} title="Odporúčania progresie" recs=${recs} exercises=${exercises} onChanged=${reload} />`}
@@ -107,6 +123,7 @@ export function PlanDetailScreen({ params }) {
       <${ActionSheet} open=${menuOpen} title=${plan.name} onClose=${() => setMenuOpen(false)}
         actions=${[
           { label: 'Upraviť plán', icon: Icon.edit(), onClick: () => navigate(`/plans/${plan.id}/edit`) },
+          { label: 'Analytika', icon: Icon.barChart(), onClick: () => navigate(`/plans/${plan.id}/analytics`) },
           ...(active ? [] : [{ label: 'Nastaviť ako aktívny', icon: Icon.check(20), onClick: makeActive }]),
           { label: 'Zmazať plán', icon: Icon.trash(), danger: true, onClick: onDelete },
         ]} />

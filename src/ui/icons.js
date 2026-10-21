@@ -25,6 +25,8 @@ export const Icon = {
   down: (s = 18) => svg(html`<path d="M6 9l6 6 6-6" />`, s),
   trendUp: (s) => svg(html`<path d="M3 17l6-6 4 4 8-8" /><path d="M15 7h6v6" />`, s),
   trendDown: (s) => svg(html`<path d="M3 7l6 6 4-4 8 8" /><path d="M15 17h6v-6" />`, s),
+  flat: (s) => svg(html`<path d="M4 12h16" /><path d="M8 8l-4 4 4 4M16 8l4 4-4 4" />`, s),
+  trophy: (s = 20) => svg(html`<path d="M8 4h8v5a4 4 0 0 1-8 0z" /><path d="M8 6H5v1a3 3 0 0 0 3 3M16 6h3v1a3 3 0 0 1-3 3M12 13v4M9 20h6M10 17h4" />`, s),
   trash: (s = 20) => svg(html`<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />`, s),
   edit: (s = 20) => svg(html`<path d="M4 20h4L19 9l-4-4L4 16v4z" /><path d="M13.5 6.5l4 4" />`, s),
   sliders: (s = 20) => svg(html`<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12" /><circle cx="16" cy="6" r="2" /><circle cx="10" cy="12" r="2" /><circle cx="18" cy="18" r="2" />`, s),

@@ -2,12 +2,12 @@ import { tx, promisify, getAll } from './db.js';
 import { getWorkout, getWorkoutSets, recentPerformances } from './workouts.js';
 import { getPlan, findPlanExercise } from './plans.js';
 import { listExercises } from './exercises.js';
-import { evaluate, incrementOf } from '../progression.js';
+import { evaluate, incrementOf, deloadWeight } from '../progression.js';
 import { uuid } from '../util.js';
 
 /**
  * Recommendation {
- *   id, planId, planExerciseId, exerciseId, workoutId,
+ *   id, planId, planExerciseId, exerciseId, workoutId,   // workoutId = null pri deloade zo stagnácie
  *   kind: 'increase_weight'|'increase_reps'|'increase_time'|'deload',
  *   from, to: { weight, repMin, repMax, durationSec },   // cieľ pred a po
  *   reason,
@@ -134,4 +134,43 @@ export async function supersedePending(planExerciseIds) {
       }
     }
   });
+}
+
+/**
+ * Deload pri stagnácii (z analytiky plánu): čakajúce odporúčanie znížiť cieľovú váhu o ~10 %.
+ * Nahradí iné čakajúce odporúčanie cviku. @returns {Promise<Recommendation|null>} null, ak cvik nemá váhu
+ */
+export async function createDeloadRecommendation(planId, planExerciseId, reason) {
+  const plan = await getPlan(planId);
+  const pe = plan && !plan.deletedAt ? findPlanExercise(plan, planExerciseId) : null;
+  if (!pe || !(pe.weight > 0)) return null;
+  const exercise = (await listExercises({ includeDeleted: true })).find((e) => e.id === pe.exerciseId);
+  if (exercise?.trackingType === 'time') return null;
+  const step = incrementOf(pe, exercise) || 2.5;
+  const to = deloadWeight(pe.weight, step);
+  if (to === null) return null;
+  const base = { weight: pe.weight, repMin: pe.repMin, repMax: pe.repMax, durationSec: pe.durationSec };
+  const now = Date.now();
+  const record = {
+    id: uuid(),
+    planId,
+    planExerciseId: pe.id,
+    exerciseId: pe.exerciseId,
+    workoutId: null,
+    kind: 'deload',
+    from: base,
+    to: { ...base, weight: to },
+    reason,
+    status: 'pending',
+    createdAt: now,
+    resolvedAt: null,
+  };
+  await tx('recommendations', 'readwrite', async (s) => {
+    const existing = await promisify(s.recommendations.index('planExerciseId').getAll(pe.id));
+    for (const r of existing) {
+      if (r.status === 'pending') await promisify(s.recommendations.put({ ...r, status: 'superseded', resolvedAt: now }));
+    }
+    await promisify(s.recommendations.put(record));
+  });
+  return record;
 }

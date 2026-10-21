@@ -21,6 +21,7 @@ python3 -m http.server 8765 &      # server musí bežať
 python3 tests/e2e_exercises.py     # knižnica cvikov, nastavenia
 python3 tests/e2e_workouts.py      # plány, tréning, časovač, história
 python3 tests/e2e_progression.py   # pravidlá progresie, odporúčania
+python3 tests/e2e_analytics.py     # analytika, grafy, stagnácia, rekordy
 ```
 
 ## Nasadenie (GitHub Pages)
@@ -45,12 +46,14 @@ src/
   router.js                                hash router
   format.js                                čísla (desatinná čiarka), časy, popisy sérií a cieľov
   progression.js                           pravidlá progresie (čisté funkcie, bez DB)
+  analytics.js                             analytika: e1RM, nárast v %, trend a stagnácia, objem, rekordy (čisté funkcie)
   db/db.js                                 IndexedDB schéma + promise wrapper
   db/exercises.js                          CRUD cvikov, mäkké mazanie, sync knižnice
   db/seed.js                               naplnenie knižnice pri prvom spustení
   db/plans.js                              plány, dni, cviky v pláne, aktívny plán
   db/workouts.js                           tréningy, série, posledný výkon, deň na rade
-  db/recommendations.js                    odporúčania: vyhodnotenie tréningu, prijatie / zamietnutie
+  db/recommendations.js                    odporúčania: vyhodnotenie tréningu, prijatie / zamietnutie, deload zo stagnácie
+  db/analytics.js                          načítanie tréningov plánu a sedení cviku pre analytiku
   data/exercise-library.js                 predvolená knižnica (93 cvikov s technikou)
   data/taxonomy.js                         partie, vybavenie, typy sledovania
   ui/components.js                         spoločné UI komponenty (AppHeader, SettingsRow, ExerciseListItem…)
@@ -58,6 +61,7 @@ src/
   ui/ExercisePicker.js                     výber cvikov z knižnice (spodný panel)
   ui/RestTimer.js                          časovač odpočinku (lišta, zvuk, uložený stav)
   ui/Recommendations.js                    karta a položka odporúčania
+  ui/charts.js                             SVG grafy bez knižnice: čiarový, stĺpcový, sparkline
   styles.css                               dizajnové tokeny (:root) a štýly — iba tmavý režim
   screens/                                 obrazovky
 tests/                                     E2E testy (Python + headless Chrome)
@@ -69,7 +73,7 @@ design/                                    mockup a opis redizajnu (Performance 
 | Store | Obsah |
 |---|---|
 | `exercises` | knižnica cvikov: partie, vybavenie, typ sledovania, checklist techniky, `builtIn`, `deletedAt` |
-| `plans` | plány → dni → cviky (série, rozsah opakovaní / čas, váha, pauza, krok progresie); `status` = `active` má najviac jeden plán |
+| `plans` | plány → dni → cviky (série, rozsah opakovaní / čas, váha, pauza, krok progresie); `stagnation` (počet tréningov, min. nárast %); `status` = `active` má najviac jeden plán |
 | `workouts` | tréningy (`active` / `done`) viazané na plán a deň; názov plánu a dňa aj cieľ cvikov sú uložené ako snímka |
 | `sets` | odcvičené série; index `[exerciseId, performedAt]` pre „naposledy" a analytiku |
 | `recommendations` | odporúčania progresie: cieľ pred a po, dôvod, stav `pending` / `accepted` / `dismissed` / `superseded` |
@@ -100,11 +104,20 @@ Progresia (dvojitá progresia, `src/progression.js`):
 - Na jeden cvik v pláne čaká najviac jedno odporúčanie; novší tréning, ručná zmena cieľa v pláne alebo zmazanie tréningu ho zruší. Úprava sérií v histórii odporúčanie prepočíta (iba pri najnovšom tréningu cviku).
 - Voľný tréning a cviky pridané mimo plánu sa nevyhodnocujú.
 
+Analytika (`src/analytics.js`, obrazovky Plán → Analytika a Cvik → Progres a rekordy):
+- Metrika tréningu: **odhad 1RM** (Epley, `váha × (1 + opak./30)`) z najlepšej série; pri vlastnej váhe max. opakovaní (so záťažou podľa posledného tréningu odhad 1RM záťaže); pri čase najdlhšia séria.
+- **Nárast v %** za obdobie (celé / 12 / 4 týždne): priemer prvých 2 tréningov oproti posledným 2 (pri menej ako 4 prvý vs. posledný). Nárast sily plánu je priemer cvikov.
+- **Stagnácia**: lineárna regresia posledných N tréningov cviku v pláne; nárast pod X % = stagnácia, pokles o 5 % a viac = pokles. N a X sa nastavujú v úprave plánu (predvolene 4 tréningy, 1 %). Upozornenie sa zobrazí v analytike, v detaile plánu a na obrazovke Plány.
+- Pri stagnácii cviku s váhou sa dá jedným ťuknutím navrhnúť **deload** (~−10 %, na krok) — vznikne čakajúce odporúčanie v pláne.
+- Grafy: odhad 1RM / metrika v čase, týždenný objem plánu (kg × opak.), sparkline pri cvikoch; ťuknutie ukáže hodnotu.
+- **Osobné rekordy** cviku a odznak „Nový rekord" v súhrne tréningu (metrika prekonala všetky predchádzajúce tréningy).
+- Analytika plánu počíta iba s tréningmi plánu; analytika v detaile cviku naprieč všetkými plánmi.
+
 ## Etapy
 
 - [x] **M1**: kostra, PWA a offline režim, DB, knižnica cvikov s technikou
 - [x] **Redizajn** (Performance Minimalism): tokeny, tmavý vzhľad, nové komponenty
 - [x] **M2**: plány, dni a cviky, aktívny tréning, posledný výkon, časovač odpočinku, história
 - [x] **M3**: pravidlá progresie a odporúčania
-- [ ] **M4**: analytika, grafy, stagnácia
+- [x] **M4**: analytika, grafy, stagnácia
 - [ ] **M5**: záloha (export a import JSON), export pre AI
