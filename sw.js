@@ -1,6 +1,6 @@
 // Service worker: precache všetkých súborov aplikácie, offline-first.
 // Pri pridaní nového súboru ho dopíš do ASSETS a zvýš VERSION (a APP_VERSION v src/config.js).
-const VERSION = '0.9.0';
+const VERSION = '0.9.1';
 const CACHE = `gymtracker-${VERSION}`;
 
 const ASSETS = [

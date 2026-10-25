@@ -248,7 +248,9 @@ export function WorkoutScreen({ params }) {
       if (next) {
         setTimeout(() => document.querySelector(`[data-row="${next}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 50);
       }
-      startRest(we.target.restSec ?? DEFAULT_REST_SEC);
+      // Po poslednej sérii cviku sa pauza nespúšťa — prechod k ďalšiemu cviku trvá rôzne dlho.
+      const { byIndex, count } = rowsOf(we, nextSets);
+      if (byIndex.size < count) startRest(we.target.restSec ?? DEFAULT_REST_SEC);
     }
   }
 

@@ -294,7 +294,7 @@ try:
     wid2 = b.eval("""(async()=>{const P=await import('./src/db/plans.js'); const W=await import('./src/db/workouts.js'); const E=await import('./src/db/exercises.js');
       const all=await E.listExercises(); const by=(id)=>all.find(e=>e.id===id);
       const d=P.newDay('Poradie'); const pb=P.newPlanExercise(by('lib-bench-press')); pb.sets=2; pb.weight=50;
-      const pp=P.newPlanExercise(by('lib-plank')); pp.sets=1; pp.durationSec=2; d.exercises=[pb,pp];
+      const pp=P.newPlanExercise(by('lib-plank')); pp.sets=2; pp.durationSec=2; d.exercises=[pb,pp];
       const p=await P.savePlan({name:'Poradie',days:[d]}); return (await W.startWorkout(p,d.id)).id})()""")
     b.goto(BASE + f'#/workout/{wid2}', 1); b.wait_for("document.querySelector('.we-card')")
     check(b.eval("!!document.querySelector('.set-row.current')") and b.eval(f"{ROW.format(c=0, r=0)}.classList.contains('current')"),
@@ -310,12 +310,15 @@ try:
     b.eval("document.querySelector('.rest-bar.modal').dispatchEvent(new MouseEvent('click', {bubbles: true}))"); settle(0.3)
     check(not exists('.rest-bar.modal') and exists('.rest-bar .rest-expand'), 'ťuknutie mimo okna zmenší pauzu do panela')
     click('.rest-btn.skip'); settle(0.3)
-    check(b.eval("document.activeElement?.dataset.field") == 'weight'
-          and b.eval(f"{ROW.format(c=0, r=0)}.contains(document.activeElement)"), 'po zavretí pauzy je kurzor v riadku na rade')
+    check(b.eval(f"{ROW.format(c=1, r=1)}.classList.contains('current')"), 'po sérii stopiek je na rade ďalšia séria cviku')
     row_type(0, 0, 'reps', '8'); row_check(0, 0); settle(0.4)
-    check(b.eval(f"{ROW.format(c=0, r=1)}.classList.contains('current')"), 'po zápise je na rade ďalšia séria')
-    click('.rest-btn.skip'); settle(0.2)
-    row_check(0, 1); settle(0.4); click('.rest-btn.skip'); settle(0.2)
+    check(b.eval(f"{ROW.format(c=0, r=1)}.classList.contains('current')") and exists('.rest-bar'), 'po zápise je na rade ďalšia séria, beží pauza')
+    click('.rest-btn.skip'); settle(0.3)
+    check(b.eval("document.activeElement?.dataset.field") == 'weight'
+          and b.eval(f"{ROW.format(c=0, r=1)}.contains(document.activeElement)"), 'po zavretí pauzy je kurzor v riadku na rade')
+    row_check(0, 1); settle(0.4)
+    check(row_done(0, 1) and not exists('.rest-bar'), 'po poslednej sérii cviku sa pauza nespustí')
+    check(b.eval(f"{ROW.format(c=1, r=1)}.classList.contains('current')"), 'na rade je ďalší cvik')
     confirm(True)
     click_text('.workout-actions .btn', 'Dokončiť tréning'); settle(1)
     check(texts('.summary-ex-name') == ['Plank', 'Tlak na rovnej lavičke'], f'história: cviky v poradí cvičenia ({texts(".summary-ex-name")})')
