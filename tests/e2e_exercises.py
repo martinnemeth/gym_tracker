@@ -185,11 +185,11 @@ try:
     check(db("m.getExercise('lib-back-squat').then(e=>e.name)") == 'Drep môj', 'sync knižnice neprepisuje úpravy')
 
     # ── Plány a navigácia ──
-    b.goto(BASE + '#/plans', 1); b.wait_for("document.querySelector('.hero')")
-    check(not b.eval("document.querySelector('.hero .btn-primary').disabled"), 'CTA Vytvoriť plán je aktívne')
-    b.screenshot(f'{T}/08_plany.png')
-    click_text('a.feature', 'Knižnica'); settle(0.6)
-    check(b.eval("location.hash") == '#/exercises', 'dlaždica Knižnica cvikov otvorí Cviky')
+    b.goto(BASE + '#/plans', 1); b.wait_for("document.querySelector('.home-list')")
+    check(not b.eval("document.querySelector('.header-cta').disabled") and exists('.empty-plans'), 'Domov: Vytvoriť plán a prázdny stav')
+    b.screenshot(f'{T}/08_domov.png')
+    click_text('.tab', 'Cviky'); settle(0.6)
+    check(b.eval("location.hash") == '#/exercises', 'záložka Cviky otvorí knižnicu')
     click_text('.tab', 'Viac'); settle(0.6)
     check(b.eval("location.hash") == '#/more' and exists('.tab.active[aria-current=page]'), 'tab bar prepína obrazovky')
 

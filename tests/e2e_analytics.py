@@ -44,7 +44,7 @@ def shot(name):
 
 try:
     b.goto(BASE + '#/plans', 1.5)
-    b.wait_for("document.querySelector('.hero')")
+    b.wait_for("document.querySelector('.home-list')")
 
     # ── Výpočty (čisté funkcie) ──
     A = lambda expr: mod('analytics.js', expr)
@@ -145,8 +145,8 @@ try:
     go(f'/plans/{pid}', "document.querySelector('.day-card')")
     check('Stagnácia' in (text('.row .row-subtitle') or ''), 'detail plánu: zhrnutie stagnujúcich cvikov')
     check(exists('.rec') and 'Uľahči' in text('.rec .rec-reason'), 'deload sa zobrazí medzi odporúčaniami plánu')
-    go('/plans', "document.querySelector('.plan-hero')")
-    check(click_text('.row', 'Stagnácia'), 'Plány: upozornenie na stagnáciu aktívneho plánu')
+    go('/plans', "document.querySelector('.plan-card')")
+    check(click_text('.badge', 'Stagnácia'), 'Domov: štítok stagnácie na karte plánu')
     b.wait_for("location.hash.endsWith('/analytics')")
 
     # ── Analytika cviku v pláne ──

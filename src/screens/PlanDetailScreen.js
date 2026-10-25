@@ -29,7 +29,7 @@ export function PlanDetailScreen({ params }) {
   }, [params.id]);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const header = (right) => html`<${AppHeader} back="/plans" backLabel="Plány" right=${right} />`;
+  const header = (right) => html`<${AppHeader} back="/plans" backLabel="Domov" right=${right} />`;
   if (loading && !data) return html`<div class="screen">${header()}<${Loading} /></div>`;
   if (error) return html`<div class="screen">${header()}<${ErrorBox} error=${error} /></div>`;
   if (!data) return html`<div class="screen">${header()}<${EmptyState} title="Plán neexistuje" /></div>`;

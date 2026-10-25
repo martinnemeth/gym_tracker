@@ -112,7 +112,7 @@ export function AppHeader({ title, large, back, backLabel = 'Späť', left, righ
 }
 
 const TABS = [
-  { path: '/plans', label: 'Plány', icon: Icon.home },
+  { path: '/plans', label: 'Domov', icon: Icon.home },
   { path: '/history', label: 'História', icon: Icon.clock },
   { path: '/exercises', label: 'Cviky', icon: Icon.dumbbell },
   { path: '/more', label: 'Viac', icon: Icon.more },

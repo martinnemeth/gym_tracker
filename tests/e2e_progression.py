@@ -59,15 +59,15 @@ def finish():
     b.wait_for("document.querySelector('.summary-stats')")
 
 def start_next():
-    b.goto(BASE + '#/plans', 1); b.wait_for("document.querySelector('.plan-hero')")
-    click('.plan-hero .btn-primary'); settle(0.8)
+    b.goto(BASE + '#/plans', 1); b.wait_for("document.querySelector('.plan-card')")
+    click('.plan-card .btn-primary'); settle(0.8)
     b.wait_for("document.querySelector('.we-card')")
     return hash_().split('/')[2]
 
 
 try:
     b.goto(BASE + '#/plans', 1.5)
-    b.wait_for("document.querySelector('.hero')")
+    b.wait_for("document.querySelector('.home-list')")
 
     # ── Pravidlá (čisté funkcie) ──
     E = "import('./src/progression.js').then(m=>m.evaluate({e}))"
@@ -134,8 +134,8 @@ try:
     b.screenshot(f'{T}/02_summary_resolved.png')
 
     # Plány a detail plánu
-    b.goto(BASE + '#/plans', 1); b.wait_for("document.querySelector('.plan-hero')")
-    check(click_text('.row .row-title', 'Odporúčania progresie'), 'Plány: riadok s čakajúcimi odporúčaniami'); settle(0.8)
+    b.goto(BASE + '#/plans', 1); b.wait_for("document.querySelector('.plan-card')")
+    check(click_text('.badge', '1 odporúčanie'), 'Domov: štítok s čakajúcimi odporúčaniami'); settle(0.8)
     check(hash_() == f'#/plans/{plan_id}' and rec_text() == ['Plank | 30 → 35 s'], 'detail plánu: čakajúce odporúčanie')
     check(texts('.pe-line-target')[0] == '2 × 8–10 · 62,5 kg', 'detail plánu: nový cieľ')
     b.screenshot(f'{T}/03_plan_recs.png')
@@ -220,7 +220,7 @@ try:
     check(not [r for r in recs_db() if r['workoutId'] == w4], 'zmazanie tréningu zmaže jeho čakajúce odporúčania')
 
     # Voľný tréning odporúčania nevytvára
-    b.goto(BASE + '#/plans', 1); b.wait_for("document.querySelector('.plan-hero')")
+    b.goto(BASE + '#/plans', 1); b.wait_for("document.querySelector('.plan-card')")
     n = len(recs_db())
     click_text('.free-workout', 'Voľný tréning'); settle(0.8)
     click_text('.empty .btn', 'Pridať cvik'); settle(0.4)

@@ -60,8 +60,8 @@ def pick(names):
 try:
     # ── Vytvorenie plánu ──
     b.goto(BASE + '#/plans', 1.5)
-    b.wait_for("document.querySelector('.hero')")
-    click_text('.hero .btn', 'Vytvoriť plán'); settle(0.6)
+    b.wait_for("document.querySelector('.home-list')")
+    click_text('.header-cta', 'Vytvoriť plán'); settle(0.6)
     check(hash_() == '#/plans/new' and exists('.day-edit'), 'CTA otvorí formulár nového plánu s prvým dňom')
     click_text('.text-btn', 'Uložiť'); settle(0.3)
     check(texts('.field-error') == ['Zadaj názov plánu.'], 'validácia názvu plánu')
@@ -108,12 +108,13 @@ try:
 
     # ── Plány: aktívny plán ──
     click('.bar-back'); settle(0.6)
-    check(hash_() == '#/plans' and exists('.plan-hero'), 'obrazovka Plány s aktívnym plánom')
-    check(b.eval("document.querySelector('.plan-hero-day').textContent") == 'Push', 'na rade je prvý deň')
+    check(hash_() == '#/plans' and count('.plan-card') == 1, 'Domov: karta plánu')
+    check(texts('.plan-card .plan-card-day') == ['Push'] and 'Test plán' in texts('.plan-card-name')[0], 'na rade je prvý deň')
+    check(not exists('.last-workout'), 'bez histórie sa karta Posledný tréning nezobrazí')
     b.screenshot(f'{T}/04_plany.png')
 
     # ── Aktívny tréning ──
-    click_text('.plan-hero .btn', 'Začať Push'); settle(0.8)
+    click_text('.plan-card .btn', 'Začať tréning'); settle(0.8)
     check(hash_().startswith('#/workout/') and title() == 'Push', 'štart tréningu z aktívneho plánu')
     wid = hash_().split('/')[2]
     check(count('.we-card') == 3 and [card_rows(i) for i in range(3)] == [2, 3, 3], 'riadky sérií podľa plánu')
@@ -184,8 +185,9 @@ try:
 
     # ── Konflikt: druhý tréning ──
     click('.bar-back'); settle(0.6)
-    b.wait_for("document.querySelector('.resume')")
-    check(exists('.resume') and 'Push' in texts('.resume-title'), 'Plány: karta prebiehajúceho tréningu')
+    b.wait_for("document.querySelector('.plan-card.running')")
+    check(texts('.plan-card.running .plan-card-day') == ['Push'] and 'Pokračovať v tréningu' in texts('.plan-card.running .btn')[0],
+          'Domov: karta plánu ponúkne pokračovanie v tréningu')
     b.screenshot(f'{T}/06_resume.png')
     b.goto(BASE + f'#/plans/{plan_id}', 1); b.wait_for("document.querySelector('.day-card')")
     confirm(False)
@@ -210,12 +212,14 @@ try:
     check(exists('.tab.active') and texts('.tab.active') == ['História'], 'záložka História')
     b.screenshot(f'{T}/08_history.png')
 
-    b.goto(BASE + '#/plans', 1); b.wait_for("document.querySelector('.plan-hero')")
-    check(b.eval("document.querySelector('.plan-hero-day').textContent") == 'Deň B' and not exists('.resume'),
-          'po dokončení je na rade ďalší deň')
+    b.goto(BASE + '#/plans', 1); b.wait_for("document.querySelector('.plan-card')")
+    check(texts('.plan-card .plan-card-day') == ['Deň B'] and not exists('.plan-card.running'), 'po dokončení je na rade ďalší deň')
+    check(exists('.last-workout') and texts('.last-workout .plan-card-day') == ['Push']
+          and '1 250 kg' in b.eval("document.querySelector('.last-workout-stats').textContent").replace('\u00a0', ' '),
+          'Domov: posledný tréning s objemom')
 
     # Zahodenie tréningu
-    click_text('.plan-hero .btn', 'Začať Deň B'); settle(0.8)
+    click_text('.plan-card .btn', 'Začať tréning'); settle(0.8)
     w2 = hash_().split('/')[2]
     click('[aria-label="Možnosti tréningu"]'); settle(0.3)
     click_text('.action-row', 'Zahodiť tréning'); settle(0.6)
@@ -275,7 +279,7 @@ try:
     check('Test plán' in texts('.wk-item .ex-item-meta')[0], 'história si pamätá názov zmazaného plánu')
 
     # ── Voľný tréning ──
-    b.goto(BASE + '#/plans', 1); b.wait_for("document.querySelector('.hero')")
+    b.goto(BASE + '#/plans', 1); b.wait_for("document.querySelector('.home-list')")
     click_text('.free-workout', 'Voľný tréning'); settle(0.8)
     check(title() == 'Voľný tréning' and exists('.empty'), 'voľný tréning začína prázdny')
     click_text('.empty .btn', 'Pridať cvik'); settle(0.4)

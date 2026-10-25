@@ -40,6 +40,12 @@ export const formatDate = (ts) =>
   new Date(ts).toLocaleDateString('sk-SK', { day: 'numeric', month: 'numeric', year: 'numeric' });
 export const formatDateShort = (ts) =>
   new Date(ts).toLocaleDateString('sk-SK', { day: 'numeric', month: 'numeric' });
+const MONTHS_SHORT = ['jan', 'feb', 'mar', 'apr', 'máj', 'jún', 'júl', 'aug', 'sep', 'okt', 'nov', 'dec'];
+/** "21. okt 2026" */
+export function formatDateMid(ts) {
+  const d = new Date(ts);
+  return `${d.getDate()}. ${MONTHS_SHORT[d.getMonth()]} ${d.getFullYear()}`;
+}
 export const formatDateLong = (ts) =>
   new Date(ts).toLocaleDateString('sk-SK', { weekday: 'long', day: 'numeric', month: 'long' });
 export const formatTime = (ts) =>
@@ -91,6 +97,9 @@ export function setsVolume(sets, typeOf) {
   return sets.reduce((sum, s) =>
     sum + (typeOf(s.exerciseId) === 'weight_reps' && s.weight > 0 && s.reps > 0 ? s.weight * s.reps : 0), 0);
 }
+
+/** Objem: 2 450 kg, od 10 t v tonách (12,4 t). */
+export const formatVolume = (v) => (v >= 10000 ? `${formatNum(Math.round(v / 100) / 10)} t` : `${formatNum(Math.round(v))} kg`);
 
 /** Relatívny dátum: "dnes", "včera", "pred 5 dňami" (od 30 dní dátum). */
 export function formatAgo(ts, now = Date.now()) {

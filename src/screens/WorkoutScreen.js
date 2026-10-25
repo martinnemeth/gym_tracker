@@ -391,7 +391,7 @@ export function WorkoutScreen({ params }) {
 
   return html`
     <div class="screen">
-      <${AppHeader} back=${back} backLabel=${editing ? 'Súhrn' : 'Plány'} right=${headerRight} />
+      <${AppHeader} back=${back} backLabel=${editing ? 'Súhrn' : 'Domov'} right=${headerRight} />
 
       <div class="detail-head">
         <h1 class="page-title">${workout.dayName}</h1>

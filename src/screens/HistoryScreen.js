@@ -6,7 +6,7 @@ import { exerciseSessions } from '../db/analytics.js';
 import { sessionRecord, formatMetric } from '../analytics.js';
 import { navigate, goBack } from '../router.js';
 import {
-  formatDuration, formatMonth, formatWeekday, formatDateLong, formatTime, formatNum, setLabel, setsVolume, plural,
+  formatDuration, formatMonth, formatWeekday, formatDateLong, formatTime, formatVolume, setLabel, setsVolume, plural,
 } from '../format.js';
 import {
   AppHeader, IconButton, ActionSheet, PrimaryButton, StatCard, Icon,
@@ -18,7 +18,6 @@ async function exerciseMap() {
   return new Map((await listExercises({ includeDeleted: true })).map((e) => [e.id, e]));
 }
 
-const volumeLabel = (v) => (v >= 10000 ? `${formatNum(Math.round(v / 100) / 10)} t` : `${formatNum(Math.round(v))} kg`);
 
 export function HistoryScreen() {
   const { data, loading, error } = useAsync(async () => {
@@ -54,7 +53,7 @@ export function HistoryScreen() {
               const meta = [
                 w.finishedAt && formatDuration(w.finishedAt - w.startedAt),
                 plural(w.sets.length, 'séria', 'série', 'sérií'),
-                volume > 0 && volumeLabel(volume),
+                volume > 0 && formatVolume(volume),
               ].filter(Boolean).join(' · ');
               return html`
                 <a class="card wk-item" key=${w.id} href=${`#/history/${w.id}`}
@@ -140,7 +139,7 @@ export function WorkoutSummaryScreen({ params }) {
           <div class="stats">
             <${StatCard} value=${workout.finishedAt ? formatDuration(workout.finishedAt - workout.startedAt) : '–'} label="Trvanie" />
             <${StatCard} value=${sets.length} label="Série" />
-            <${StatCard} value=${volume > 0 ? volumeLabel(volume) : '–'} label="Objem" />
+            <${StatCard} value=${volume > 0 ? formatVolume(volume) : '–'} label="Objem" />
           </div>
         </div>
         ${records.size > 0 && html`

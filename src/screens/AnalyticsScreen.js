@@ -7,7 +7,7 @@ import {
   PERIODS, DEFAULT_STAGNATION, TREND_LABEL, planAnalytics, exerciseAnalytics, personalRecords, periodStart,
   formatPct, formatMetric, lastSessions,
 } from '../analytics.js';
-import { formatNum, formatDate, formatDateShort, setLabel, plural } from '../format.js';
+import { formatNum, formatDate, formatDateShort, formatVolume, setLabel, plural } from '../format.js';
 import { navigate } from '../router.js';
 import {
   AppHeader, FilterChip, SectionCard, StatCard, Tag, Icon, Loading, ErrorBox, EmptyState, useAsync, showToast,
@@ -52,7 +52,6 @@ export function Pct({ value }) {
 }
 
 const volumeAxis = (v) => (v >= 1000 ? `${formatNum(Math.round(v / 100) / 10)} t` : `${formatNum(v)}`);
-const volumeLabel = (v) => (v >= 10000 ? `${formatNum(Math.round(v / 100) / 10)} t` : `${formatNum(Math.round(v))} kg`);
 
 const go = (path) => (e) => { e.preventDefault(); navigate(path); };
 
@@ -163,7 +162,7 @@ export function PlanAnalyticsScreen({ params }) {
       <${SectionCard} title="Týždenný objem" icon=${Icon.barChart()}>
         ${hasVolume
           ? html`<${BarChart} bars=${a.weeks.map((w) => ({ t: w.t, value: w.volume, workouts: w.workouts }))}
-              format=${volumeLabel} axisFormat=${volumeAxis} label="Týždenný objem plánu"
+              format=${formatVolume} axisFormat=${volumeAxis} label="Týždenný objem plánu"
               title=${(b) => `od ${formatDateShort(b.t)} · ${plural(b.workouts, 'tréning', 'tréningy', 'tréningov')}`} />`
           : html`<p class="row-subtitle">Objem sa počíta zo sérií s váhou (kg × opakovania). V tomto období žiadne nie sú.</p>`}
       </${SectionCard}>
