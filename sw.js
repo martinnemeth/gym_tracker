@@ -1,6 +1,6 @@
 // Service worker: precache všetkých súborov aplikácie, offline-first.
 // Pri pridaní nového súboru ho dopíš do ASSETS a zvýš VERSION (a APP_VERSION v src/config.js).
-const VERSION = '0.9.1';
+const VERSION = '0.9.2';
 const CACHE = `gymtracker-${VERSION}`;
 
 const ASSETS = [
@@ -74,10 +74,16 @@ self.addEventListener('activate', (event) => {
 
 // Cache-first: všetko z cache aktuálnej verzie (offline, konzistentná sada súborov).
 // Novú verziu prinesie iba nový sw.js (iné VERSION): prehliadač ho overí pri spustení, nainštaluje
-// celú sadu súborov do novej cache a pri ďalšom spustení beží nová verzia. Navigácie dostanú index.html.
+// celú sadu súborov do novej cache a pri ďalšom spustení beží nová verzia. Navigácie na aplikáciu
+// dostanú index.html; iné stránky v rovnakom priečinku (napr. docs/návod.pdf) idú normálne zo servera.
 self.addEventListener('fetch', (event) => {
   const req = event.request;
-  if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
+  const url = new URL(req.url);
+  if (req.method !== 'GET' || url.origin !== self.location.origin) return;
+  if (req.mode === 'navigate') {
+    const root = new URL(self.registration.scope).pathname;
+    if (url.pathname !== root && url.pathname !== `${root}index.html`) return;
+  }
   const key = req.mode === 'navigate' ? 'index.html' : req;
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
